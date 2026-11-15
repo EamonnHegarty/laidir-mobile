@@ -34,6 +34,11 @@ export function exercisesRepo({ db, clock, newId }: Deps) {
       );
     },
 
+    /** Every custom exercise including tombstones, for naming exercise_ids in routines and history. */
+    async listAll(): Promise<Exercise[]> {
+      return parseDocs<Exercise>(await db.all("SELECT doc FROM exercises"));
+    },
+
     /** Includes tombstones. */
     get(id: string): Promise<Exercise | null> {
       return readEntity<Exercise>(db, "EXERCISE", id);

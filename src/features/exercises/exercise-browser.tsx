@@ -28,9 +28,12 @@ const FILTER_MUSCLES: MuscleGroup[] = [
 export function ExerciseBrowser({
   items,
   onSelect,
+  selected,
 }: {
   items: readonly ExerciseListItem[];
   onSelect: (item: ExerciseListItem) => void;
+  /** Refs to tick, when picking several. */
+  selected?: ReadonlySet<string>;
 }) {
   const [search, setSearch] = useState("");
   const [muscle, setMuscle] = useState<MuscleGroup | undefined>();
@@ -81,15 +84,24 @@ export function ExerciseBrowser({
           title={item.name}
           subtitle={`${MUSCLE_LABELS[item.primary_muscle]} · ${EQUIPMENT_LABELS[item.equipment]}`}
           onPress={() => onSelect(item)}
+          accessibilityLabel={selected?.has(item.ref) ? `${item.name}, selected` : undefined}
           right={
-            item.custom ? (
-              <Label tone="tint" size="small">
-                Custom
-              </Label>
-            ) : undefined
+            <>
+              {item.custom ? (
+                <Label tone="tint" size="small">
+                  Custom
+                </Label>
+              ) : null}
+              {selected?.has(item.ref) ? (
+                <Label tone="tint" size="heading">
+                  ✓
+                </Label>
+              ) : null}
+            </>
           }
         />
       )}
+      extraData={selected}
     />
   );
 }
