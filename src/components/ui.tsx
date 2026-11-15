@@ -71,7 +71,7 @@ export function Row({
       accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => [
         styles.row,
-        { borderBottomColor: theme.backgroundElement },
+        { borderBottomColor: theme.border },
         pressed && { backgroundColor: theme.backgroundElement },
       ]}
     >
