@@ -22,6 +22,7 @@ type Loaded = {
   custom: Map<string, Exercise>;
   settings: Settings;
   previous: Map<ExerciseRef, LoggedSet[]>;
+  exerciseRest: Map<string, number>;
 };
 
 /** The workout in progress. Every change is saved as you go, so it survives the app closing. */
@@ -31,7 +32,7 @@ export default function ActiveWorkoutScreen() {
   const query = useLiveQuery(async (r) => {
     const workout = await r.workouts.getActive();
     if (!workout) return null;
-    const [routine, custom, settings, previous] = await Promise.all([
+    const [routine, custom, settings, previous, exerciseRest] = await Promise.all([
       workout.routine_id ? r.routines.get(workout.routine_id) : null,
       r.exercises.listAll(),
       r.settings.get(),
@@ -39,8 +40,16 @@ export default function ActiveWorkoutScreen() {
         r,
         workout.exercises.map((e) => e.exercise_id),
       ),
+      r.settings.exerciseRest(),
     ]);
-    return { workout, routine, custom: new Map(custom.map((e) => [e.id, e])), settings, previous };
+    return {
+      workout,
+      routine,
+      custom: new Map(custom.map((e) => [e.id, e])),
+      settings,
+      previous,
+      exerciseRest,
+    };
   }, []);
 
   // Take the first load only: after that this screen owns the session and saves it, and reloading
@@ -86,6 +95,17 @@ function ActiveSession({ initial }: { initial: Loaded }) {
   const notes = workout.notes ?? "";
   const [exercises, setExercises] = useState<WorkoutExercise[]>(workout.exercises);
   const [previous, setPrevious] = useState(initial.previous);
+  const [exerciseRest, setExerciseRest] = useState(initial.exerciseRest);
+
+  const chooseRest = (ref: string, seconds: number | null) => {
+    setExerciseRest((current) => {
+      const next = new Map(current);
+      if (seconds === null) next.delete(ref);
+      else next.set(ref, seconds);
+      return next;
+    });
+    void repos.settings.setExerciseRest(ref, seconds);
+  };
 
   // Save shortly after each change; finish/discard flush or cancel it.
   const content = { name: name.trim() ? name : workout.name, notes, exercises };
@@ -198,6 +218,8 @@ function ActiveSession({ initial }: { initial: Loaded }) {
         customExercises={custom}
         previous={previous}
         settings={settings}
+        exerciseRest={exerciseRest}
+        onExerciseRest={chooseRest}
         onAddExercises={addFromPicker}
         onDiscard={discard}
       />

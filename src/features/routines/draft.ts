@@ -59,11 +59,13 @@ export function removeExercise(draft: RoutineDraft, index: number): RoutineDraft
 }
 
 /** Moves an exercise one place up (-1) or down (+1). Out-of-range moves do nothing. */
-export function moveExercise(draft: RoutineDraft, index: number, by: -1 | 1): RoutineDraft {
-  const target = index + by;
-  if (target < 0 || target >= draft.exercises.length) return draft;
+/** Moves one exercise to a new position (drag and drop); the others keep their order. */
+export function moveExercise(draft: RoutineDraft, from: number, to: number): RoutineDraft {
+  const count = draft.exercises.length;
+  if (from === to || from < 0 || from >= count || to < 0 || to >= count) return draft;
   const exercises = [...draft.exercises];
-  [exercises[index], exercises[target]] = [exercises[target]!, exercises[index]!];
+  const [moved] = exercises.splice(from, 1);
+  exercises.splice(to, 0, moved!);
   return { ...draft, exercises };
 }
 
