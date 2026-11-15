@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { CommitField } from "@/components/commit-field";
-import { Button, Chip, ChipGrid, Field, Label } from "@/components/ui";
+import { Button, Chip, ChipGrid, Field, IconButton, Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import { describeExercise } from "@/data/catalogue";
 import type { Exercise, RoutineFolder, RoutineSet, SetType, Tracking } from "@/data/contract";
@@ -367,32 +367,6 @@ function SetRow({
   );
 }
 
-function IconButton({
-  label,
-  a11y,
-  onPress,
-  disabled,
-}: {
-  label: string;
-  a11y: string;
-  onPress: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityLabel={a11y}
-      accessibilityState={{ disabled }}
-      hitSlop={8}
-      style={[styles.iconButton, { opacity: disabled ? 0.3 : 1 }]}
-    >
-      <Label size="heading">{label}</Label>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   content: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.five * 3 },
   name: { fontSize: 20, fontWeight: 600 },
@@ -412,5 +386,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   setField: { flex: 1, paddingVertical: 8, textAlign: "center" },
-  iconButton: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
 });
