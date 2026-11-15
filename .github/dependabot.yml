@@ -48,6 +48,9 @@ updates:
       # eslint-config-expo's plugins (react, import) don't support ESLint 10 yet.
       - dependency-name: "eslint"
         update-types: [version-update:semver-major]
+      # Node types follow .node-version (24).
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
       # Jest major must match what jest-expo supports.
       - dependency-name: "jest"
         update-types: [version-update:semver-major]

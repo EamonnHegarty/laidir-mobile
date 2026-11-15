@@ -33,6 +33,17 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # contract/ and src/generated/ are committed copies of the laidir-api contract at the SHA in
+      # contract.json. Fail if they differ from a fresh sync.
+      - name: Contract files match the pinned laidir-api ref
+        run: |
+          pnpm contract:sync
+          if [ -n "$(git status --porcelain -- contract src/generated)" ]; then
+            git status --short -- contract src/generated
+            echo "::error::Run 'pnpm contract:sync' and commit the result."
+            exit 1
+          fi
+
       - name: Format
         run: pnpm format:check
 

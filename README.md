@@ -16,6 +16,27 @@ in phase 4. Related repos: [laidir-api](https://github.com/EamonnHegarty/laidir-
 | Checks          | Prettier, ESLint (`eslint-config-expo`), `tsc`, Jest (`jest-expo`), `expo-doctor` |
 | Builds          | EAS Build (cloud): `development` dev client and `preview` APK                     |
 
+## Data
+
+Everything is stored on the phone in SQLite ([`src/data/`](src/data)). Each item is kept as the exact
+laidir-api v1 JSON document (exercises, routine folders, routines, workouts), so phase 3 sync pushes and pulls the
+same documents. Tests run the data layer against real SQLite (`node:sqlite`) and validate every stored document
+against the contract's JSON Schemas.
+
+| Path                                                   | What                                                                                       |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| [`contract.json`](contract.json)                       | The laidir-api commit this app is built against                                            |
+| [`contract/`](contract)                                | Synced copy of the bundled OpenAPI spec, `schemas/v1/` and the built-in exercise catalogue |
+| [`src/generated/openapi.ts`](src/generated/openapi.ts) | Types generated from the spec                                                              |
+| [`src/data/migrations.ts`](src/data/migrations.ts)     | Append-only SQLite migrations (`PRAGMA user_version`)                                      |
+
+To move to a newer contract, set `ref` in `contract.json` to a laidir-api commit SHA, then run
+`pnpm contract:sync` and commit the changes. CI fails if the committed files don't match the pinned ref.
+
+Rules from the contract that the app relies on: deleted items are tombstones (`deleted_at`), never removed, so
+history keeps a deleted custom exercise's name; deleting a routine folder unfiles its routines; a `folder_id` that
+points at a missing or deleted folder counts as unfiled; weights are stored in kg at full precision.
+
 ## Develop
 
 Requires Node ≥ 24.3 (see `.node-version`) and pnpm.
