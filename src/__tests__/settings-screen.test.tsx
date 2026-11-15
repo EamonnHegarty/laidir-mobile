@@ -15,6 +15,7 @@ function fakeRepositories() {
   const changes = createChangeFeed();
   let stored: Settings = { ...DEFAULT_SETTINGS };
   let name: string | undefined;
+  let accent = "glas";
   const settings = {
     displayName: async () => name,
     setDisplayName: async (next: string | null) => {
@@ -22,6 +23,11 @@ function fakeRepositories() {
       changes.notify();
     },
     exerciseRest: async () => new Map([["builtin:bench-press", 90]]),
+    accent: async () => accent,
+    setAccent: async (next: string) => {
+      accent = next;
+      changes.notify();
+    },
     get: async () => stored,
     update: async (patch: Partial<Settings>) => {
       stored = { ...stored, ...patch };
@@ -33,6 +39,7 @@ function fakeRepositories() {
     value: { repositories: { settings } as unknown as Repositories, changes },
     stored: () => stored,
     name: () => name,
+    accent: () => accent,
   };
 }
 
@@ -67,5 +74,12 @@ describe("Settings screen", () => {
     await fireEvent.changeText(field, " Eamonn ");
     await fireEvent(field, "endEditing");
     expect(fake.name()).toBe("Eamonn");
+
+    expect(screen.getByRole("radio", { name: "Glas, Green" })).toBeChecked();
+    await fireEvent.press(screen.getByRole("radio", { name: "Farraige, Sea blue" }));
+    expect(fake.accent()).toBe("farraige");
+    expect(
+      await screen.findByRole("radio", { name: "Farraige, Sea blue", checked: true }),
+    ).toBeOnTheScreen();
   });
 });

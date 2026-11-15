@@ -50,3 +50,14 @@ describe("stats, display name and backup", () => {
     expect(backup.settings).toMatchObject({ weight_unit: "lb" });
   });
 });
+
+describe("accent", () => {
+  it("defaults to Glas, stores a choice, and ignores unknown values", async () => {
+    const { repos, db } = await setup();
+    expect(await repos.settings.accent()).toBe("glas");
+    await repos.settings.setAccent("corcra");
+    expect(await repos.settings.accent()).toBe("corcra");
+    await db.run("UPDATE settings SET value = ? WHERE key = 'local_accent'", ['"neon"']);
+    expect(await repos.settings.accent()).toBe("glas");
+  });
+});
