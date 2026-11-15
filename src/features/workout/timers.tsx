@@ -1,10 +1,10 @@
-import * as Haptics from "expo-haptics";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { restOver } from "@/lib/haptics";
 import { formatDuration } from "@/lib/units";
 
 import { restTimer, useRestTimer } from "./rest-timer";
@@ -43,7 +43,7 @@ export function RestBar() {
   useEffect(() => {
     if (timer && left === 0) {
       restTimer.stop();
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      restOver();
     }
   }, [timer, left]);
 
