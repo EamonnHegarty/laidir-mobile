@@ -21,15 +21,18 @@
     "bundle:android": "expo export --platform android --output-dir dist",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm expo:doctor",
     "build:dev": "eas build --platform android --profile development",
-    "build:preview": "eas build --platform android --profile preview"
+    "build:preview": "eas build --platform android --profile preview",
+    "contract:sync": "node scripts/contract-sync.mjs"
   },
   "dependencies": {
     "expo": "~58.0.25",
     "expo-constants": "~58.0.16",
+    "expo-crypto": "~58.0.8",
     "expo-dev-client": "~58.0.20",
     "expo-linking": "~58.0.17",
     "expo-router": "~58.0.31",
     "expo-splash-screen": "~58.0.14",
+    "expo-sqlite": "~58.0.17",
     "expo-status-bar": "~58.0.5",
     "expo-system-ui": "~58.0.7",
     "react": "19.3.0",
@@ -44,13 +47,17 @@
   "devDependencies": {
     "@testing-library/react-native": "^14.1.0",
     "@types/jest": "^30.0.0",
+    "@types/node": "^24.19.2",
     "@types/react": "~19.3.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "eslint": "^9.39.5",
     "eslint-config-expo": "^58.0.4",
     "eslint-config-prettier": "^10.1.8",
     "expo-doctor": "^1.21.8",
     "jest": "^30.5.2",
     "jest-expo": "^58.0.14",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.10.1",
     "typescript": "~6.0.3"
   }

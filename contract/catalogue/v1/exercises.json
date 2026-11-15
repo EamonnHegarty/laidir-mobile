@@ -1,0 +1,1136 @@
+{
+  "$schema": "./exercises.schema.json",
+  "catalogue_version": 1,
+  "exercises": [
+    {
+      "slug": "barbell-bench-press",
+      "name": "Bench Press (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["triceps", "shoulders"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-incline-bench-press",
+      "name": "Incline Bench Press (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["shoulders", "triceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-decline-bench-press",
+      "name": "Decline Bench Press (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["triceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-bench-press",
+      "name": "Bench Press (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["triceps", "shoulders"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-incline-bench-press",
+      "name": "Incline Bench Press (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["shoulders", "triceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-decline-bench-press",
+      "name": "Decline Bench Press (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["triceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-fly",
+      "name": "Chest Fly (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["shoulders"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-incline-fly",
+      "name": "Incline Chest Fly (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["shoulders"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-pullover",
+      "name": "Pullover (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["lats"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "cable-fly",
+      "name": "Cable Crossover",
+      "equipment": "cable",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["shoulders"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "cable-low-to-high-fly",
+      "name": "Low-to-High Cable Fly",
+      "equipment": "cable",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["shoulders"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-chest-press",
+      "name": "Chest Press (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["triceps", "shoulders"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-incline-chest-press",
+      "name": "Incline Chest Press (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["shoulders", "triceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-pec-deck",
+      "name": "Pec Deck (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["shoulders"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "smith-machine-bench-press",
+      "name": "Bench Press (Smith Machine)",
+      "equipment": "smith_machine",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["triceps", "shoulders"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "smith-machine-incline-bench-press",
+      "name": "Incline Bench Press (Smith Machine)",
+      "equipment": "smith_machine",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["shoulders", "triceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "push-up",
+      "name": "Push-Up",
+      "equipment": "bodyweight",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["triceps", "shoulders"],
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "dip",
+      "name": "Chest Dip",
+      "equipment": "bodyweight",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["triceps", "shoulders"],
+      "tracking": "weighted_bodyweight"
+    },
+    {
+      "slug": "assisted-dip",
+      "name": "Assisted Dip (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "chest",
+      "secondary_muscles": ["triceps", "shoulders"],
+      "tracking": "assisted_bodyweight"
+    },
+    {
+      "slug": "barbell-deadlift",
+      "name": "Deadlift (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "lower_back",
+      "secondary_muscles": ["glutes", "hamstrings", "traps", "forearms"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-sumo-deadlift",
+      "name": "Sumo Deadlift (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "glutes",
+      "secondary_muscles": ["quads", "adductors", "lower_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-romanian-deadlift",
+      "name": "Romanian Deadlift (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "hamstrings",
+      "secondary_muscles": ["glutes", "lower_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-romanian-deadlift",
+      "name": "Romanian Deadlift (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "hamstrings",
+      "secondary_muscles": ["glutes", "lower_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "trap-bar-deadlift",
+      "name": "Deadlift (Trap Bar)",
+      "equipment": "other",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes", "hamstrings", "lower_back", "traps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-rack-pull",
+      "name": "Rack Pull (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "lower_back",
+      "secondary_muscles": ["traps", "glutes", "forearms"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-good-morning",
+      "name": "Good Morning (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "hamstrings",
+      "secondary_muscles": ["lower_back", "glutes"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-row",
+      "name": "Bent Over Row (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "upper_back",
+      "secondary_muscles": ["lats", "biceps", "lower_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-pendlay-row",
+      "name": "Pendlay Row (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "upper_back",
+      "secondary_muscles": ["lats", "biceps", "lower_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "t-bar-row",
+      "name": "T-Bar Row",
+      "equipment": "barbell",
+      "primary_muscle": "upper_back",
+      "secondary_muscles": ["lats", "biceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-row",
+      "name": "Single Arm Row (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "lats",
+      "secondary_muscles": ["upper_back", "biceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-chest-supported-row",
+      "name": "Chest Supported Row (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "upper_back",
+      "secondary_muscles": ["lats", "biceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "cable-seated-row",
+      "name": "Seated Row (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "upper_back",
+      "secondary_muscles": ["lats", "biceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "cable-lat-pulldown",
+      "name": "Lat Pulldown (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "lats",
+      "secondary_muscles": ["biceps", "upper_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "cable-close-grip-lat-pulldown",
+      "name": "Close Grip Lat Pulldown (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "lats",
+      "secondary_muscles": ["biceps", "upper_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "cable-straight-arm-pulldown",
+      "name": "Straight Arm Pulldown (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "lats",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-row",
+      "name": "Seated Row (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "upper_back",
+      "secondary_muscles": ["lats", "biceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-lat-pulldown",
+      "name": "Lat Pulldown (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "lats",
+      "secondary_muscles": ["biceps", "upper_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "pull-up",
+      "name": "Pull-Up",
+      "equipment": "bodyweight",
+      "primary_muscle": "lats",
+      "secondary_muscles": ["biceps", "upper_back"],
+      "tracking": "weighted_bodyweight"
+    },
+    {
+      "slug": "chin-up",
+      "name": "Chin-Up",
+      "equipment": "bodyweight",
+      "primary_muscle": "lats",
+      "secondary_muscles": ["biceps", "upper_back"],
+      "tracking": "weighted_bodyweight"
+    },
+    {
+      "slug": "assisted-pull-up",
+      "name": "Assisted Pull-Up (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "lats",
+      "secondary_muscles": ["biceps", "upper_back"],
+      "tracking": "assisted_bodyweight"
+    },
+    {
+      "slug": "inverted-row",
+      "name": "Inverted Row",
+      "equipment": "bodyweight",
+      "primary_muscle": "upper_back",
+      "secondary_muscles": ["lats", "biceps"],
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "barbell-shrug",
+      "name": "Shrug (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "traps",
+      "secondary_muscles": ["forearms"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-shrug",
+      "name": "Shrug (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "traps",
+      "secondary_muscles": ["forearms"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "back-extension",
+      "name": "Back Extension",
+      "equipment": "bodyweight",
+      "primary_muscle": "lower_back",
+      "secondary_muscles": ["glutes", "hamstrings"],
+      "tracking": "weighted_bodyweight"
+    },
+    {
+      "slug": "band-pull-apart",
+      "name": "Band Pull-Apart",
+      "equipment": "band",
+      "primary_muscle": "upper_back",
+      "secondary_muscles": ["shoulders"],
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "barbell-overhead-press",
+      "name": "Overhead Press (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["triceps", "upper_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-push-press",
+      "name": "Push Press (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["triceps", "quads"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "smith-machine-overhead-press",
+      "name": "Overhead Press (Smith Machine)",
+      "equipment": "smith_machine",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["triceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-shoulder-press",
+      "name": "Shoulder Press (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["triceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-arnold-press",
+      "name": "Arnold Press (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["triceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-shoulder-press",
+      "name": "Shoulder Press (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["triceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "landmine-press",
+      "name": "Landmine Press",
+      "equipment": "barbell",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["chest", "triceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-lateral-raise",
+      "name": "Lateral Raise (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "shoulders",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "cable-lateral-raise",
+      "name": "Lateral Raise (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "shoulders",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-lateral-raise",
+      "name": "Lateral Raise (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "shoulders",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-front-raise",
+      "name": "Front Raise (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "shoulders",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-rear-delt-fly",
+      "name": "Rear Delt Fly (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["upper_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-reverse-fly",
+      "name": "Reverse Fly (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["upper_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "cable-face-pull",
+      "name": "Face Pull (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["upper_back", "traps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-upright-row",
+      "name": "Upright Row (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["traps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "pike-push-up",
+      "name": "Pike Push-Up",
+      "equipment": "bodyweight",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["triceps"],
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "handstand-push-up",
+      "name": "Handstand Push-Up",
+      "equipment": "bodyweight",
+      "primary_muscle": "shoulders",
+      "secondary_muscles": ["triceps"],
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "barbell-curl",
+      "name": "Bicep Curl (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "biceps",
+      "secondary_muscles": ["forearms"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "ez-bar-curl",
+      "name": "Bicep Curl (EZ Bar)",
+      "equipment": "barbell",
+      "primary_muscle": "biceps",
+      "secondary_muscles": ["forearms"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "ez-bar-preacher-curl",
+      "name": "Preacher Curl (EZ Bar)",
+      "equipment": "barbell",
+      "primary_muscle": "biceps",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-curl",
+      "name": "Bicep Curl (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "biceps",
+      "secondary_muscles": ["forearms"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-hammer-curl",
+      "name": "Hammer Curl (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "biceps",
+      "secondary_muscles": ["forearms"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-incline-curl",
+      "name": "Incline Curl (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "biceps",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-concentration-curl",
+      "name": "Concentration Curl (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "biceps",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-preacher-curl",
+      "name": "Preacher Curl (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "biceps",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "cable-curl",
+      "name": "Bicep Curl (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "biceps",
+      "secondary_muscles": ["forearms"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-reverse-curl",
+      "name": "Reverse Curl (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "forearms",
+      "secondary_muscles": ["biceps"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-wrist-curl",
+      "name": "Wrist Curl (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "forearms",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-farmers-walk",
+      "name": "Farmer's Walk (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "forearms",
+      "secondary_muscles": ["traps", "abs"],
+      "tracking": "weight_distance"
+    },
+    {
+      "slug": "dead-hang",
+      "name": "Dead Hang",
+      "equipment": "bodyweight",
+      "primary_muscle": "forearms",
+      "secondary_muscles": ["lats"],
+      "tracking": "duration"
+    },
+    {
+      "slug": "cable-triceps-pushdown",
+      "name": "Triceps Pushdown (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "triceps",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "cable-rope-pushdown",
+      "name": "Triceps Rope Pushdown (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "triceps",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "cable-overhead-triceps-extension",
+      "name": "Overhead Triceps Extension (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "triceps",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-overhead-triceps-extension",
+      "name": "Overhead Triceps Extension (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "triceps",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "ez-bar-skullcrusher",
+      "name": "Skullcrusher (EZ Bar)",
+      "equipment": "barbell",
+      "primary_muscle": "triceps",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-close-grip-bench-press",
+      "name": "Close Grip Bench Press (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "triceps",
+      "secondary_muscles": ["chest", "shoulders"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-triceps-kickback",
+      "name": "Triceps Kickback (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "triceps",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-triceps-extension",
+      "name": "Triceps Extension (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "triceps",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "bench-dip",
+      "name": "Bench Dip",
+      "equipment": "bodyweight",
+      "primary_muscle": "triceps",
+      "secondary_muscles": ["chest", "shoulders"],
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "barbell-back-squat",
+      "name": "Squat (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes", "hamstrings", "lower_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-front-squat",
+      "name": "Front Squat (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes", "abs"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "smith-machine-squat",
+      "name": "Squat (Smith Machine)",
+      "equipment": "smith_machine",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes", "hamstrings"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-goblet-squat",
+      "name": "Goblet Squat (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "kettlebell-goblet-squat",
+      "name": "Goblet Squat (Kettlebell)",
+      "equipment": "kettlebell",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-hack-squat",
+      "name": "Hack Squat (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-leg-press",
+      "name": "Leg Press (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes", "hamstrings"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-leg-extension",
+      "name": "Leg Extension (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "quads",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-lying-leg-curl",
+      "name": "Lying Leg Curl (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "hamstrings",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-seated-leg-curl",
+      "name": "Seated Leg Curl (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "hamstrings",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-lunge",
+      "name": "Lunge (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes", "hamstrings"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-lunge",
+      "name": "Lunge (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes", "hamstrings"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-walking-lunge",
+      "name": "Walking Lunge (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes", "hamstrings"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-bulgarian-split-squat",
+      "name": "Bulgarian Split Squat (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-step-up",
+      "name": "Step-Up (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "bodyweight-squat",
+      "name": "Air Squat",
+      "equipment": "bodyweight",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes"],
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "pistol-squat",
+      "name": "Pistol Squat",
+      "equipment": "bodyweight",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes"],
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "barbell-hip-thrust",
+      "name": "Hip Thrust (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "glutes",
+      "secondary_muscles": ["hamstrings"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-hip-thrust",
+      "name": "Hip Thrust (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "glutes",
+      "secondary_muscles": ["hamstrings"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "glute-bridge",
+      "name": "Glute Bridge",
+      "equipment": "bodyweight",
+      "primary_muscle": "glutes",
+      "secondary_muscles": ["hamstrings"],
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "cable-glute-kickback",
+      "name": "Glute Kickback (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "glutes",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-hip-abduction",
+      "name": "Hip Abduction (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "abductors",
+      "secondary_muscles": ["glutes"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-hip-adduction",
+      "name": "Hip Adduction (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "adductors",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "nordic-hamstring-curl",
+      "name": "Nordic Hamstring Curl",
+      "equipment": "bodyweight",
+      "primary_muscle": "hamstrings",
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "kettlebell-swing",
+      "name": "Kettlebell Swing",
+      "equipment": "kettlebell",
+      "primary_muscle": "glutes",
+      "secondary_muscles": ["hamstrings", "lower_back"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "sled-push",
+      "name": "Sled Push",
+      "equipment": "other",
+      "primary_muscle": "quads",
+      "secondary_muscles": ["glutes", "calves"],
+      "tracking": "weight_distance"
+    },
+    {
+      "slug": "machine-standing-calf-raise",
+      "name": "Standing Calf Raise (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "calves",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-seated-calf-raise",
+      "name": "Seated Calf Raise (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "calves",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-leg-press-calf-raise",
+      "name": "Leg Press Calf Raise (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "calves",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "smith-machine-calf-raise",
+      "name": "Calf Raise (Smith Machine)",
+      "equipment": "smith_machine",
+      "primary_muscle": "calves",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-calf-raise",
+      "name": "Calf Raise (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "calves",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "barbell-power-clean",
+      "name": "Power Clean (Barbell)",
+      "equipment": "barbell",
+      "primary_muscle": "full_body",
+      "secondary_muscles": ["traps", "quads", "glutes"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "dumbbell-thruster",
+      "name": "Thruster (Dumbbell)",
+      "equipment": "dumbbell",
+      "primary_muscle": "full_body",
+      "secondary_muscles": ["quads", "shoulders"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "kettlebell-turkish-get-up",
+      "name": "Turkish Get-Up (Kettlebell)",
+      "equipment": "kettlebell",
+      "primary_muscle": "full_body",
+      "secondary_muscles": ["shoulders", "abs"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "burpee",
+      "name": "Burpee",
+      "equipment": "bodyweight",
+      "primary_muscle": "full_body",
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "plank",
+      "name": "Plank",
+      "equipment": "bodyweight",
+      "primary_muscle": "abs",
+      "secondary_muscles": ["obliques"],
+      "tracking": "duration"
+    },
+    {
+      "slug": "side-plank",
+      "name": "Side Plank",
+      "equipment": "bodyweight",
+      "primary_muscle": "obliques",
+      "secondary_muscles": ["abs"],
+      "tracking": "duration"
+    },
+    {
+      "slug": "crunch",
+      "name": "Crunch",
+      "equipment": "bodyweight",
+      "primary_muscle": "abs",
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "sit-up",
+      "name": "Sit-Up",
+      "equipment": "bodyweight",
+      "primary_muscle": "abs",
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "cable-crunch",
+      "name": "Crunch (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "abs",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "machine-crunch",
+      "name": "Crunch (Machine)",
+      "equipment": "machine",
+      "primary_muscle": "abs",
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "hanging-leg-raise",
+      "name": "Hanging Leg Raise",
+      "equipment": "bodyweight",
+      "primary_muscle": "abs",
+      "secondary_muscles": ["obliques"],
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "hanging-knee-raise",
+      "name": "Hanging Knee Raise",
+      "equipment": "bodyweight",
+      "primary_muscle": "abs",
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "lying-leg-raise",
+      "name": "Lying Leg Raise",
+      "equipment": "bodyweight",
+      "primary_muscle": "abs",
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "ab-wheel-rollout",
+      "name": "Ab Wheel Rollout",
+      "equipment": "other",
+      "primary_muscle": "abs",
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "dead-bug",
+      "name": "Dead Bug",
+      "equipment": "bodyweight",
+      "primary_muscle": "abs",
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "mountain-climber",
+      "name": "Mountain Climber",
+      "equipment": "bodyweight",
+      "primary_muscle": "abs",
+      "secondary_muscles": ["shoulders"],
+      "tracking": "reps_only"
+    },
+    {
+      "slug": "russian-twist",
+      "name": "Russian Twist",
+      "equipment": "bodyweight",
+      "primary_muscle": "obliques",
+      "secondary_muscles": ["abs"],
+      "tracking": "weighted_bodyweight"
+    },
+    {
+      "slug": "cable-woodchop",
+      "name": "Woodchop (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "obliques",
+      "secondary_muscles": ["abs"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "cable-pallof-press",
+      "name": "Pallof Press (Cable)",
+      "equipment": "cable",
+      "primary_muscle": "obliques",
+      "secondary_muscles": ["abs"],
+      "tracking": "weight_reps"
+    },
+    {
+      "slug": "treadmill",
+      "name": "Treadmill",
+      "equipment": "machine",
+      "primary_muscle": "cardio",
+      "tracking": "distance_duration"
+    },
+    {
+      "slug": "rowing-machine",
+      "name": "Rowing Machine",
+      "equipment": "machine",
+      "primary_muscle": "cardio",
+      "secondary_muscles": ["upper_back", "quads"],
+      "tracking": "distance_duration"
+    },
+    {
+      "slug": "stationary-bike",
+      "name": "Stationary Bike",
+      "equipment": "machine",
+      "primary_muscle": "cardio",
+      "tracking": "distance_duration"
+    },
+    {
+      "slug": "air-bike",
+      "name": "Air Bike",
+      "equipment": "machine",
+      "primary_muscle": "cardio",
+      "tracking": "distance_duration"
+    },
+    {
+      "slug": "elliptical",
+      "name": "Elliptical",
+      "equipment": "machine",
+      "primary_muscle": "cardio",
+      "tracking": "distance_duration"
+    },
+    {
+      "slug": "ski-erg",
+      "name": "Ski Erg",
+      "equipment": "machine",
+      "primary_muscle": "cardio",
+      "secondary_muscles": ["lats", "triceps"],
+      "tracking": "distance_duration"
+    },
+    {
+      "slug": "stair-climber",
+      "name": "Stair Climber",
+      "equipment": "machine",
+      "primary_muscle": "cardio",
+      "tracking": "duration"
+    },
+    {
+      "slug": "running",
+      "name": "Running (Outdoor)",
+      "equipment": "other",
+      "primary_muscle": "cardio",
+      "tracking": "distance_duration"
+    },
+    {
+      "slug": "walking",
+      "name": "Walking",
+      "equipment": "other",
+      "primary_muscle": "cardio",
+      "tracking": "distance_duration"
+    },
+    {
+      "slug": "cycling",
+      "name": "Cycling (Outdoor)",
+      "equipment": "other",
+      "primary_muscle": "cardio",
+      "tracking": "distance_duration"
+    },
+    {
+      "slug": "swimming",
+      "name": "Swimming",
+      "equipment": "other",
+      "primary_muscle": "cardio",
+      "tracking": "distance_duration"
+    },
+    {
+      "slug": "jump-rope",
+      "name": "Jump Rope",
+      "equipment": "other",
+      "primary_muscle": "cardio",
+      "secondary_muscles": ["calves"],
+      "tracking": "duration"
+    },
+    {
+      "slug": "battle-ropes",
+      "name": "Battle Ropes",
+      "equipment": "other",
+      "primary_muscle": "cardio",
+      "secondary_muscles": ["shoulders"],
+      "tracking": "duration"
+    }
+  ]
+}

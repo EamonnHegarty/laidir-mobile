@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/EamonnHegarty/laidir-api/main/schemas/v1/Profile.json",
+  "title": "Profile",
+  "description": "One per user: display preferences. The id is the user's Cognito sub, set by the server from the verified token.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "type",
+    "schema_version",
+    "created_at",
+    "updated_at",
+    "deleted_at",
+    "weight_unit",
+    "distance_unit"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "common.json#/$defs/Uuid"
+    },
+    "type": {
+      "const": "PROFILE"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "created_at": {
+      "$ref": "common.json#/$defs/Timestamp"
+    },
+    "updated_at": {
+      "$ref": "common.json#/$defs/Timestamp"
+    },
+    "deleted_at": {
+      "$ref": "common.json#/$defs/DeletedAt"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "weight_unit": {
+      "type": "string",
+      "enum": ["kg", "lb"]
+    },
+    "distance_unit": {
+      "type": "string",
+      "enum": ["km", "mi"]
+    },
+    "default_rest_seconds": {
+      "$ref": "common.json#/$defs/RestSeconds"
+    }
+  }
+}

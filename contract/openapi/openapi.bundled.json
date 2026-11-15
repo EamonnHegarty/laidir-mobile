@@ -1,0 +1,1022 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Láidir API",
+    "version": "0.1.0",
+    "summary": "Backup and sync for the Láidir gym tracker.",
+    "description": "The contract between the Láidir app and its backend. **This file is the source of truth**:\nthe mobile app generates its typed client from `openapi.bundled.json`, and the API's own\ntypes are generated from it too.\n\nEntity schemas live in `schemas/v1/` as JSON Schema 2020-12 and are shared with the MCP server.\n\n## Conventions\n- IDs are client-generated lowercase UUIDs. Timestamps are ISO-8601 UTC with milliseconds.\n- The user is **always** the verified token's `sub`. No endpoint takes a user ID.\n- Errors are RFC 9457 `application/problem+json`.\n- Deletes are soft: set `deleted_at`. Tombstones sync like any other change.\n- Deleting a `RoutineFolder`: tombstone the folder and push each of its routines with `folder_id`\n  removed. Readers treat a `folder_id` pointing to a missing or deleted folder as unfiled.\n- Built-in exercises (`exercise_id: builtin:<slug>`) come from the static catalogue in\n  `catalogue/v1/exercises.json`, not from this API.\n\n## Sync model (phase 3)\n- **Push**: the client sends whole items. Each write is conditional on `updated_at`\n  (last writer wins). A stale write is rejected with the server's current copy.\n- **Pull**: the server stamps every accepted write with its own clock (`synced_at`, not exposed).\n  Pull pages through changes in `synced_at` order from an opaque cursor, so a device with a\n  wrong clock can't make its changes invisible to other devices.\n\nOperations marked `x-laidir-status: planned` aren't implemented yet.\n",
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    },
+    "contact": {
+      "url": "https://github.com/EamonnHegarty/laidir-api/issues"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://yqyk3qt5b8.execute-api.eu-west-1.amazonaws.com",
+      "description": "prod"
+    }
+  ],
+  "security": [
+    {
+      "cognito": [
+        "openid",
+        "email",
+        "profile"
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "health",
+      "description": "Liveness"
+    },
+    {
+      "name": "sync",
+      "description": "Backup and multi-device sync"
+    },
+    {
+      "name": "profile",
+      "description": "The signed-in user's profile"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Liveness check",
+        "description": "Public. Returns the deployed version. Throttled to 1 rps.",
+        "tags": [
+          "health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The API is up.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/sync": {
+      "get": {
+        "operationId": "pullChanges",
+        "summary": "Pull changes since a cursor",
+        "description": "Every item (all types, including tombstones) changed since `cursor`, oldest first.\nOmit `cursor` for a full download. Keep calling with `next_cursor` until `has_more` is false,\nthen store the final `next_cursor` for the next sync.\n",
+        "tags": [
+          "sync"
+        ],
+        "x-laidir-status": "planned",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque cursor from a previous pull.",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of changes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PullResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "pushChanges",
+        "summary": "Push local changes",
+        "description": "Upserts up to 25 whole items by id. Each item is applied independently; one stale or invalid\nitem doesn't fail the rest. Retrying a push is safe.\n",
+        "tags": [
+          "sync"
+        ],
+        "x-laidir-status": "planned",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per-item results, in request order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/profile": {
+      "get": {
+        "operationId": "getProfile",
+        "summary": "Get the signed-in user's profile",
+        "description": "Returns 404 until the user's first profile push.",
+        "tags": [
+          "profile"
+        ],
+        "x-laidir-status": "planned",
+        "responses": {
+          "200": {
+            "description": "The profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cognito": {
+        "type": "oauth2",
+        "description": "Cognito access token (authorization code + PKCE). Validated by API Gateway's JWT authorizer.",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://laidir-prod-4d9359.auth.eu-west-1.amazoncognito.com/oauth2/authorize",
+            "tokenUrl": "https://laidir-prod-4d9359.auth.eu-west-1.amazoncognito.com/oauth2/token",
+            "refreshUrl": "https://laidir-prod-4d9359.auth.eu-west-1.amazoncognito.com/oauth2/token",
+            "scopes": {
+              "openid": "OpenID Connect",
+              "email": "Email address",
+              "profile": "Basic profile"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Profile": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://raw.githubusercontent.com/EamonnHegarty/laidir-api/main/schemas/v1/Profile.json",
+        "title": "Profile",
+        "description": "One per user: display preferences. The id is the user's Cognito sub, set by the server from the verified token.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "schema_version",
+          "created_at",
+          "updated_at",
+          "deleted_at",
+          "weight_unit",
+          "distance_unit"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "type": {
+            "const": "PROFILE"
+          },
+          "schema_version": {
+            "const": 1
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "deleted_at": {
+            "$ref": "#/components/schemas/DeletedAt"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "weight_unit": {
+            "type": "string",
+            "enum": [
+              "kg",
+              "lb"
+            ]
+          },
+          "distance_unit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          },
+          "default_rest_seconds": {
+            "$ref": "#/components/schemas/RestSeconds"
+          }
+        }
+      },
+      "Exercise": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://raw.githubusercontent.com/EamonnHegarty/laidir-api/main/schemas/v1/Exercise.json",
+        "title": "Exercise",
+        "description": "A user's custom exercise. Built-in exercises come from the static catalogue and are referenced as `builtin:<slug>`.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "schema_version",
+          "created_at",
+          "updated_at",
+          "deleted_at",
+          "name",
+          "equipment",
+          "primary_muscle",
+          "tracking"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "type": {
+            "const": "EXERCISE"
+          },
+          "schema_version": {
+            "const": 1
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "deleted_at": {
+            "$ref": "#/components/schemas/DeletedAt"
+          },
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "equipment": {
+            "$ref": "#/components/schemas/Equipment"
+          },
+          "primary_muscle": {
+            "$ref": "#/components/schemas/MuscleGroup"
+          },
+          "secondary_muscles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MuscleGroup"
+            },
+            "uniqueItems": true,
+            "maxItems": 10
+          },
+          "tracking": {
+            "$ref": "#/components/schemas/Tracking"
+          },
+          "notes": {
+            "$ref": "#/components/schemas/Notes"
+          }
+        }
+      },
+      "Routine": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://raw.githubusercontent.com/EamonnHegarty/laidir-api/main/schemas/v1/Routine.json",
+        "title": "Routine",
+        "description": "A workout template: ordered exercises with target sets. Created in the app or via Claude (MCP).",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "schema_version",
+          "created_at",
+          "updated_at",
+          "deleted_at",
+          "name",
+          "exercises"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "type": {
+            "const": "ROUTINE"
+          },
+          "schema_version": {
+            "const": 1
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "deleted_at": {
+            "$ref": "#/components/schemas/DeletedAt"
+          },
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "notes": {
+            "$ref": "#/components/schemas/Notes"
+          },
+          "folder_id": {
+            "description": "The RoutineFolder this routine is filed in. Absent means unfiled. Readers must treat a folder_id that points to a missing or deleted folder as unfiled: sync isn't atomic across items.",
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "sort_order": {
+            "description": "Position within its folder (or within unfiled routines).",
+            "$ref": "#/components/schemas/SortOrder"
+          },
+          "exercises": {
+            "description": "In the order they're performed.",
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/RoutineExercise"
+            }
+          }
+        }
+      },
+      "RoutineFolder": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://raw.githubusercontent.com/EamonnHegarty/laidir-api/main/schemas/v1/RoutineFolder.json",
+        "title": "RoutineFolder",
+        "description": "A user-named group of routines, ordered by sort_order. Routines point at their folder with folder_id. Deleting a folder: tombstone the folder (deleted_at) and push each of its routines with folder_id removed. Readers treat a folder_id that points to a missing or deleted folder as unfiled, so a routine moved into a folder on another device at the same moment is never lost.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "schema_version",
+          "created_at",
+          "updated_at",
+          "deleted_at",
+          "name",
+          "sort_order"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "type": {
+            "const": "ROUTINE_FOLDER"
+          },
+          "schema_version": {
+            "const": 1
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "deleted_at": {
+            "$ref": "#/components/schemas/DeletedAt"
+          },
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "sort_order": {
+            "$ref": "#/components/schemas/SortOrder"
+          },
+          "notes": {
+            "$ref": "#/components/schemas/Notes"
+          }
+        }
+      },
+      "Workout": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://raw.githubusercontent.com/EamonnHegarty/laidir-api/main/schemas/v1/Workout.json",
+        "title": "Workout",
+        "description": "A logged session with its sets embedded.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "schema_version",
+          "created_at",
+          "updated_at",
+          "deleted_at",
+          "name",
+          "started_at",
+          "exercises"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "type": {
+            "const": "WORKOUT"
+          },
+          "schema_version": {
+            "const": 1
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "deleted_at": {
+            "$ref": "#/components/schemas/DeletedAt"
+          },
+          "name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "routine_id": {
+            "description": "The routine this workout was started from, if any.",
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "started_at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "ended_at": {
+            "description": "Absent while the workout is in progress.",
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "notes": {
+            "$ref": "#/components/schemas/Notes"
+          },
+          "exercises": {
+            "description": "In the order they were performed.",
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/WorkoutExercise"
+            }
+          }
+        }
+      },
+      "Entity": {
+        "description": "Any syncable item, discriminated by `type`.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Profile"
+          },
+          {
+            "$ref": "#/components/schemas/Exercise"
+          },
+          {
+            "$ref": "#/components/schemas/Routine"
+          },
+          {
+            "$ref": "#/components/schemas/RoutineFolder"
+          },
+          {
+            "$ref": "#/components/schemas/Workout"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "PROFILE": "#/components/schemas/Profile",
+            "EXERCISE": "#/components/schemas/Exercise",
+            "ROUTINE": "#/components/schemas/Routine",
+            "ROUTINE_FOLDER": "#/components/schemas/RoutineFolder",
+            "WORKOUT": "#/components/schemas/Workout"
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "service",
+          "version",
+          "schema_version"
+        ],
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "service": {
+            "const": "laidir-api"
+          },
+          "version": {
+            "description": "Git commit SHA of the deployed code.",
+            "type": "string"
+          },
+          "schema_version": {
+            "description": "Highest entity schema version this deployment accepts.",
+            "type": "integer"
+          }
+        }
+      },
+      "PullResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next_cursor",
+          "has_more"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Entity"
+            }
+          },
+          "next_cursor": {
+            "description": "Pass to the next pull. Store the last one once `has_more` is false.",
+            "type": "string"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PushRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 25,
+            "items": {
+              "$ref": "#/components/schemas/Entity"
+            }
+          }
+        }
+      },
+      "PushResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "results"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PushResult"
+            }
+          }
+        }
+      },
+      "PushResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "PROFILE",
+              "EXERCISE",
+              "ROUTINE",
+              "ROUTINE_FOLDER",
+              "WORKOUT"
+            ]
+          },
+          "status": {
+            "description": "`applied`: written. `stale`: the server has a newer `updated_at`; `current` is its copy.\n`invalid`: failed validation; see `problem`.\n",
+            "type": "string",
+            "enum": [
+              "applied",
+              "stale",
+              "invalid"
+            ]
+          },
+          "current": {
+            "$ref": "#/components/schemas/Entity"
+          },
+          "problem": {
+            "$ref": "#/components/schemas/Problem"
+          }
+        }
+      },
+      "Problem": {
+        "description": "RFC 9457 problem details.",
+        "type": "object",
+        "required": [
+          "title",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "default": "about:blank"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          }
+        }
+      },
+      "Uuid": {
+        "description": "Client-generated UUID, lowercase hex. The Profile id is the user's Cognito sub (also a UUID).",
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+      },
+      "Timestamp": {
+        "description": "ISO-8601 UTC with exactly three fractional digits, e.g. 2026-11-15T09:30:00.000Z. Sorts correctly as a string.",
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+      },
+      "DeletedAt": {
+        "description": "Soft-delete marker. null while the item is live; a timestamp once deleted. Tombstones are synced so other devices delete too.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "RestSeconds": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 3600
+      },
+      "Name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "Equipment": {
+        "type": "string",
+        "enum": [
+          "barbell",
+          "dumbbell",
+          "kettlebell",
+          "machine",
+          "cable",
+          "smith_machine",
+          "bodyweight",
+          "band",
+          "other"
+        ]
+      },
+      "MuscleGroup": {
+        "type": "string",
+        "enum": [
+          "chest",
+          "upper_back",
+          "lats",
+          "traps",
+          "lower_back",
+          "shoulders",
+          "biceps",
+          "triceps",
+          "forearms",
+          "abs",
+          "obliques",
+          "glutes",
+          "quads",
+          "hamstrings",
+          "adductors",
+          "abductors",
+          "calves",
+          "neck",
+          "full_body",
+          "cardio",
+          "other"
+        ]
+      },
+      "Tracking": {
+        "description": "Which set fields an exercise uses. weight_reps: weight_kg + reps. reps_only: reps. weighted_bodyweight / assisted_bodyweight: weight_kg (added / assistance) + reps. duration: duration_s. distance_duration: distance_m + duration_s. weight_distance: weight_kg + distance_m (e.g. carries).",
+        "type": "string",
+        "enum": [
+          "weight_reps",
+          "reps_only",
+          "weighted_bodyweight",
+          "assisted_bodyweight",
+          "duration",
+          "distance_duration",
+          "weight_distance"
+        ]
+      },
+      "Notes": {
+        "type": "string",
+        "maxLength": 2000
+      },
+      "SortOrder": {
+        "description": "Position in a user-ordered list, ascending. Leave gaps (e.g. steps of 1000) so a move rewrites one item. Ties sort by name, then created_at.",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000000000
+      },
+      "ExerciseRef": {
+        "description": "Reference to an exercise: `builtin:<slug>` for the built-in catalogue, or the UUID of one of the user's custom exercises.",
+        "type": "string",
+        "pattern": "^(builtin:[a-z0-9]+(-[a-z0-9]+)*|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$",
+        "maxLength": 100
+      },
+      "SupersetGroup": {
+        "description": "Exercises in the same workout or routine with the same group number form a superset.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 20
+      },
+      "SetType": {
+        "type": "string",
+        "enum": [
+          "normal",
+          "warmup",
+          "drop",
+          "failure"
+        ]
+      },
+      "Reps": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000
+      },
+      "WeightKg": {
+        "description": "Weight in kilograms, stored at full precision. Apps convert for lb users and round only for display. For assisted exercises this is the assistance.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1000
+      },
+      "Rpe": {
+        "description": "Rate of perceived exertion, 1 to 10 in half steps.",
+        "type": "number",
+        "minimum": 1,
+        "maximum": 10,
+        "multipleOf": 0.5
+      },
+      "DurationSeconds": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 86400
+      },
+      "DistanceMetres": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1000000
+      },
+      "RoutineSet": {
+        "description": "Targets for one set. All targets are optional; a rep range uses min and max.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "set_type"
+        ],
+        "properties": {
+          "set_type": {
+            "$ref": "#/components/schemas/SetType"
+          },
+          "target_reps_min": {
+            "$ref": "#/components/schemas/Reps"
+          },
+          "target_reps_max": {
+            "$ref": "#/components/schemas/Reps"
+          },
+          "target_weight_kg": {
+            "$ref": "#/components/schemas/WeightKg"
+          },
+          "target_rpe": {
+            "$ref": "#/components/schemas/Rpe"
+          },
+          "target_duration_s": {
+            "$ref": "#/components/schemas/DurationSeconds"
+          },
+          "target_distance_m": {
+            "$ref": "#/components/schemas/DistanceMetres"
+          }
+        }
+      },
+      "RoutineExercise": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "exercise_id",
+          "sets"
+        ],
+        "properties": {
+          "exercise_id": {
+            "$ref": "#/components/schemas/ExerciseRef"
+          },
+          "notes": {
+            "$ref": "#/components/schemas/Notes"
+          },
+          "rest_seconds": {
+            "$ref": "#/components/schemas/RestSeconds"
+          },
+          "superset_group": {
+            "$ref": "#/components/schemas/SupersetGroup"
+          },
+          "sets": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 30,
+            "items": {
+              "$ref": "#/components/schemas/RoutineSet"
+            }
+          }
+        }
+      },
+      "WorkoutSet": {
+        "description": "One performed set. Which measurement fields are used depends on the exercise's tracking type.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "set_type",
+          "completed"
+        ],
+        "properties": {
+          "set_type": {
+            "$ref": "#/components/schemas/SetType"
+          },
+          "weight_kg": {
+            "$ref": "#/components/schemas/WeightKg"
+          },
+          "reps": {
+            "$ref": "#/components/schemas/Reps"
+          },
+          "duration_s": {
+            "$ref": "#/components/schemas/DurationSeconds"
+          },
+          "distance_m": {
+            "$ref": "#/components/schemas/DistanceMetres"
+          },
+          "rpe": {
+            "$ref": "#/components/schemas/Rpe"
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WorkoutExercise": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "exercise_id",
+          "sets"
+        ],
+        "properties": {
+          "exercise_id": {
+            "$ref": "#/components/schemas/ExerciseRef"
+          },
+          "notes": {
+            "$ref": "#/components/schemas/Notes"
+          },
+          "superset_group": {
+            "$ref": "#/components/schemas/SupersetGroup"
+          },
+          "sets": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/WorkoutSet"
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "The request was malformed or failed validation.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing or invalid access token.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "description": "Request body too large.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Throttled by API Gateway.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

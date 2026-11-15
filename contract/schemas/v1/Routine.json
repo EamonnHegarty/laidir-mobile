@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/EamonnHegarty/laidir-api/main/schemas/v1/Routine.json",
+  "title": "Routine",
+  "description": "A workout template: ordered exercises with target sets. Created in the app or via Claude (MCP).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "type",
+    "schema_version",
+    "created_at",
+    "updated_at",
+    "deleted_at",
+    "name",
+    "exercises"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "common.json#/$defs/Uuid"
+    },
+    "type": {
+      "const": "ROUTINE"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "created_at": {
+      "$ref": "common.json#/$defs/Timestamp"
+    },
+    "updated_at": {
+      "$ref": "common.json#/$defs/Timestamp"
+    },
+    "deleted_at": {
+      "$ref": "common.json#/$defs/DeletedAt"
+    },
+    "name": {
+      "$ref": "common.json#/$defs/Name"
+    },
+    "notes": {
+      "$ref": "common.json#/$defs/Notes"
+    },
+    "folder_id": {
+      "description": "The RoutineFolder this routine is filed in. Absent means unfiled. Readers must treat a folder_id that points to a missing or deleted folder as unfiled: sync isn't atomic across items.",
+      "$ref": "common.json#/$defs/Uuid"
+    },
+    "sort_order": {
+      "description": "Position within its folder (or within unfiled routines).",
+      "$ref": "common.json#/$defs/SortOrder"
+    },
+    "exercises": {
+      "description": "In the order they're performed.",
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "$ref": "common.json#/$defs/RoutineExercise"
+      }
+    }
+  }
+}
