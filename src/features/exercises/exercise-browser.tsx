@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 
-import { Chip, ChipRow, EmptyState, Field, Label, Row } from "@/components/ui";
+import { Chip, ChipRow, ClearableField, EmptyState, Label, Row } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import type { MuscleGroup } from "@/data/contract";
 import { EQUIPMENT_LABELS, MUSCLE_LABELS } from "@/lib/labels";
@@ -51,13 +51,13 @@ export function ExerciseBrowser({
       ListHeaderComponent={
         <View>
           <View style={styles.search}>
-            <Field
+            <ClearableField
               value={search}
               onChangeText={setSearch}
               placeholder="Search exercises"
               accessibilityLabel="Search exercises"
+              clearLabel="Clear search"
               autoCorrect={false}
-              clearButtonMode="while-editing"
               returnKeyType="search"
             />
           </View>
