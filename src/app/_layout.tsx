@@ -43,25 +43,22 @@ export default function RootLayout() {
               selected: { color: colors.tint },
             }}
           >
-            <NativeTabs.Trigger name="(workout)">
-              <NativeTabs.Trigger.Label>Workout</NativeTabs.Trigger.Label>
-              <NativeTabs.Trigger.Icon md="fitness_center" />
+            <NativeTabs.Trigger name="profile">
+              <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+              <NativeTabs.Trigger.Icon md="person" />
             </NativeTabs.Trigger>
             <NativeTabs.Trigger name="history">
               <NativeTabs.Trigger.Label>History</NativeTabs.Trigger.Label>
               <NativeTabs.Trigger.Icon md="history" />
             </NativeTabs.Trigger>
-            <NativeTabs.Trigger name="routines">
+            {/* Programs is "/" (the (programs) group), so the app opens here. */}
+            <NativeTabs.Trigger name="(programs)">
               <NativeTabs.Trigger.Label>Programs</NativeTabs.Trigger.Label>
               <NativeTabs.Trigger.Icon md="list_alt" />
             </NativeTabs.Trigger>
             <NativeTabs.Trigger name="exercises">
               <NativeTabs.Trigger.Label>Exercises</NativeTabs.Trigger.Label>
               <NativeTabs.Trigger.Icon md="exercise" />
-            </NativeTabs.Trigger>
-            <NativeTabs.Trigger name="settings">
-              <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
-              <NativeTabs.Trigger.Icon md="settings" />
             </NativeTabs.Trigger>
           </NativeTabs>
         </DatabaseProvider>

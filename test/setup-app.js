@@ -9,3 +9,9 @@ jest.mock("react-native-reorderable-list", () => {
   };
   return { __esModule: true, default: ReorderableList, useReorderableDrag: () => () => {} };
 });
+
+// The swipe-to-delete wrapper needs Reanimated's native runtime; tests render the row on its own.
+jest.mock("react-native-gesture-handler/ReanimatedSwipeable", () => ({
+  __esModule: true,
+  default: ({ children }) => children,
+}));

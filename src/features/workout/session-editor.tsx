@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { ReorderList, setCount } from "@/components/reorder-list";
-import { Button, Field, IconButton, Label } from "@/components/ui";
+import { DashedButton, Pill } from "@/components/glas";
+import { Icon } from "@/components/icon";
+import { Field, IconButton, Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import { describeExercise } from "@/data/catalogue";
 import type { Exercise, Routine, WorkoutExercise } from "@/data/contract";
@@ -94,6 +96,18 @@ function SessionBody({
 }: SessionEditorProps & { onReorder: () => void }) {
   const theme = useTheme();
   const [restFor, setRestFor] = useState<number | null>(null);
+  // Exercise index → opened (true) or folded (false) by tapping its header.
+  const [toggled, setToggled] = useState<ReadonlyMap<number, boolean>>(new Map());
+  // In a live session, exercises after the one you're on fold to one line until you get to them.
+  const current = exercises.findIndex((e) => e.sets.some((set) => !set.completed));
+  const folded = (index: number) =>
+    toggled.get(index) === undefined
+      ? live &&
+        current >= 0 &&
+        index > current &&
+        !exercises[index]!.sets.some((set) => set.completed)
+      : !toggled.get(index);
+  const toggleFold = (index: number) => setToggled((cur) => new Map(cur).set(index, folded(index)));
   const notes = routine?.notes;
 
   const restOf = (exercise: WorkoutExercise, index: number) => {
@@ -138,6 +152,29 @@ function SessionBody({
         const hints = setHints(exercise.sets, last, template);
         const rest = restOf(exercise, index).seconds;
         let working = 0;
+        const done = exercise.sets.filter((set) => set.completed).length;
+
+        if (folded(index)) {
+          return (
+            <Pressable
+              key={`${exercise.exercise_id}-${index}`}
+              onPress={() => toggleFold(index)}
+              onLongPress={exercises.length > 1 ? onReorder : undefined}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: false }}
+              accessibilityLabel={`${info.name}, ${done} of ${exercise.sets.length} sets. Show sets`}
+              style={[styles.card, styles.foldedCard, { backgroundColor: theme.backgroundElement }]}
+            >
+              <Label size="heading" style={[styles.flex, { color: theme.tint }]} numberOfLines={1}>
+                {info.name}
+              </Label>
+              <Label tone="secondary" size="small">
+                {done} / {exercise.sets.length} sets
+              </Label>
+              <Icon name="expand_more" />
+            </Pressable>
+          );
+        }
 
         return (
           <View
@@ -147,6 +184,9 @@ function SessionBody({
             <View style={styles.cardHeader}>
               <Pressable
                 style={styles.flex}
+                onPress={() => toggleFold(index)}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: true }}
                 onLongPress={exercises.length > 1 ? onReorder : undefined}
                 accessibilityHint={
                   exercises.length > 1 ? "Long-press to reorder exercises" : undefined
@@ -157,17 +197,12 @@ function SessionBody({
                 </Label>
               </Pressable>
               {onExerciseRest ? (
-                <Pressable
+                <Pill
+                  icon="timer"
+                  label={restLabel(rest)}
                   onPress={() => setRestFor(index)}
-                  accessibilityRole="button"
                   accessibilityLabel={`Rest timer for ${info.name}: ${restLabel(rest)}`}
-                  hitSlop={6}
-                  style={[styles.restChip, { backgroundColor: theme.background }]}
-                >
-                  <Label size="small" tone={rest === 0 ? "secondary" : "default"}>
-                    ⏱ {restLabel(rest)}
-                  </Label>
-                </Pressable>
+                />
               ) : null}
               <IconButton
                 icon="close"
@@ -209,21 +244,36 @@ function SessionBody({
               );
             })}
             {exercise.sets.length < MAX_SETS ? (
-              <Button
-                title="Add set"
-                tone="plain"
+              <Pressable
                 onPress={() => onExercises((cur) => addSet(cur, index))}
-              />
+                accessibilityRole="button"
+                accessibilityLabel={`Add set to ${info.name}`}
+                style={({ pressed }) => [styles.addSet, pressed && { opacity: 0.5 }]}
+              >
+                <Icon name="add" size={18} color={theme.tint} />
+                <Label tone="tint" size="small">
+                  Add set
+                </Label>
+              </Pressable>
             ) : null}
           </View>
         );
       })}
 
       {exercises.length < MAX_EXERCISES ? (
-        <Button title="Add exercises" onPress={onAddExercises} />
+        <DashedButton title="Add exercises" onPress={onAddExercises} />
       ) : null}
 
-      {onDiscard ? <Button title="Discard workout" tone="danger" onPress={onDiscard} /> : null}
+      {onDiscard ? (
+        <Pressable
+          onPress={onDiscard}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.discard, pressed && { opacity: 0.5 }]}
+        >
+          <Icon name="delete" size={18} color={theme.danger} />
+          <Label tone="danger">Discard workout</Label>
+        </Pressable>
+      ) : null}
 
       {editing && editingRest && onExerciseRest ? (
         <RestPicker
@@ -245,13 +295,33 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.five * 3 },
   name: { fontSize: 20, fontWeight: 600 },
   notes: { borderLeftWidth: 3, paddingLeft: Spacing.two, paddingVertical: 2 },
-  card: { borderRadius: 12, padding: Spacing.two, gap: Spacing.one },
+  card: { borderRadius: 12, padding: Spacing.two, gap: 2 },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.two,
     paddingLeft: Spacing.one,
   },
-  restChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 },
+  foldedCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.three - 4,
+  },
+  addSet: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 10,
+  },
+  discard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.one,
+    paddingVertical: 12,
+  },
   flex: { flex: 1 },
 });

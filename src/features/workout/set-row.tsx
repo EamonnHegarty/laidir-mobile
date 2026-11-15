@@ -1,5 +1,7 @@
-import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 
+import { Icon } from "@/components/icon";
 import { LiveField } from "@/components/live-field";
 import { Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
@@ -15,13 +17,15 @@ import { fieldsFor } from "./session";
 const SET_TYPES: SetType[] = ["normal", "warmup", "drop", "failure"];
 const SHORT: Record<SetType, string> = { normal: "", warmup: "W", drop: "D", failure: "F" };
 const METRES_PER_MILE = 1609.344;
+const SWIPE_WIDTH = 88;
 
 type Measures = Pick<WorkoutSet, "weight_kg" | "reps" | "duration_s" | "distance_m">;
 type Units = Pick<Settings, "weight_unit" | "distance_unit">;
 
 /**
  * One set while logging: type badge, last time's value, inputs for what the exercise tracks
- * (empty fields show a hint you can accept by ticking), and the done tick.
+ * (empty fields show a hint you can accept by ticking), and the done tick. Swipe it right to left to
+ * delete it (long-press the set number, or the accessibility action, does the same).
  */
 export function LogSetRow({
   number,
@@ -144,47 +148,66 @@ export function LogSetRow({
   });
 
   return (
-    <View style={[styles.row, set.completed && { backgroundColor: theme.doneRow }]}>
-      <Pressable
-        onPress={() => onChange({ set_type: nextType })}
-        onLongPress={() =>
-          Alert.alert(`Remove set ${label}?`, undefined, [
-            { text: "Cancel", style: "cancel" },
-            { text: "Remove", style: "destructive", onPress: onRemove },
-          ])
-        }
-        accessibilityHint="Tap to change the set type. Long-press to remove the set."
-        accessibilityActions={[{ name: "remove", label: "Remove set" }]}
-        onAccessibilityAction={(e) => {
-          if (e.nativeEvent.actionName === "remove") onRemove();
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={`${SET_TYPE_LABELS[set.set_type]} set ${label}. Change to ${SET_TYPE_LABELS[nextType]}`}
-        style={styles.badge}
+    <ReanimatedSwipeable
+      friction={1.5}
+      rightThreshold={SWIPE_TO_DELETE}
+      overshootRight={false}
+      onSwipeableOpen={onRemove}
+      renderRightActions={() => (
+        <View style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
+          <Icon name="delete" size={20} color={theme.onTint} />
+          <Text style={[styles.deleteText, { color: theme.onTint }]}>Delete</Text>
+        </View>
+      )}
+    >
+      <View
+        style={[
+          styles.row,
+          { backgroundColor: set.completed ? theme.doneRow : theme.backgroundElement },
+        ]}
       >
-        <Label tone={set.set_type === "normal" ? "default" : "tint"} size="heading">
-          {label}
+        <Pressable
+          onPress={() => onChange({ set_type: nextType })}
+          onLongPress={() =>
+            Alert.alert(`Remove set ${label}?`, undefined, [
+              { text: "Cancel", style: "cancel" },
+              { text: "Remove", style: "destructive", onPress: onRemove },
+            ])
+          }
+          accessibilityHint="Tap to change the set type. Long-press to remove the set."
+          accessibilityActions={[{ name: "remove", label: "Remove set" }]}
+          onAccessibilityAction={(e) => {
+            if (e.nativeEvent.actionName === "remove") onRemove();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`${SET_TYPE_LABELS[set.set_type]} set ${label}. Change to ${SET_TYPE_LABELS[nextType]}`}
+          style={styles.badge}
+        >
+          <Label tone={set.set_type === "normal" ? "default" : "tint"} size="heading">
+            {label}
+          </Label>
+        </Pressable>
+        <Label tone="secondary" size="small" style={styles.previous} numberOfLines={1}>
+          {previous ?? "—"}
         </Label>
-      </Pressable>
-      <Label tone="secondary" size="small" style={styles.previous} numberOfLines={1}>
-        {previous ?? "—"}
-      </Label>
-      {fields}
-      <Pressable
-        onPress={onToggle}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: set.completed }}
-        accessibilityLabel={a11y("Done")}
-        hitSlop={6}
-        style={[styles.tick, { backgroundColor: set.completed ? theme.success : theme.background }]}
-      >
-        <Label style={{ color: set.completed ? theme.onTint : theme.textSecondary }} size="heading">
-          ✓
-        </Label>
-      </Pressable>
-    </View>
+        {fields}
+        <Pressable
+          onPress={onToggle}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: set.completed }}
+          accessibilityLabel={a11y("Done")}
+          hitSlop={6}
+          style={[styles.tick, { backgroundColor: set.completed ? theme.success : theme.border }]}
+        >
+          <Icon name="check" size={22} color={set.completed ? theme.onTint : theme.textSecondary} />
+        </Pressable>
+      </View>
+    </ReanimatedSwipeable>
   );
 }
+
+/** How far (px) the row must be swiped left, and released, to delete the set. */
+const SWIPE_TO_DELETE = 96;
 
 /** Column headings matching LogSetRow's layout: Set · Last time · the tracked fields · tick. */
 export function LogSetHeader({ tracking, units }: { tracking: Tracking; units: Units }) {
@@ -233,6 +256,15 @@ const styles = StyleSheet.create({
   previous: { flex: 1.3, minWidth: 0 },
   field: { flex: 1, minWidth: 0, paddingVertical: 8, paddingHorizontal: 4, textAlign: "center" },
   tickSpace: { width: 44 },
+  deleteAction: {
+    width: SWIPE_WIDTH,
+    marginLeft: Spacing.one,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  deleteText: { fontSize: 12, fontWeight: 600 },
   tick: {
     width: 44,
     height: 40,

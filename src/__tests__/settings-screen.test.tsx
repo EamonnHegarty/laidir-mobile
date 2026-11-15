@@ -1,16 +1,27 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
-import SettingsScreen from "@/app/settings";
+import SettingsScreen from "@/app/profile/settings";
 import { RepositoriesProvider } from "@/data/database-provider";
 import type { Repositories } from "@/data/index";
 import { createChangeFeed } from "@/data/live";
 import { DEFAULT_SETTINGS, type Settings } from "@/data/settings";
 
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
+jest.mock("expo-file-system", () => ({}));
+jest.mock("expo-sharing", () => ({}));
+
 /** Just enough of the repositories for the Settings screen, kept in memory. */
 function fakeRepositories() {
   const changes = createChangeFeed();
   let stored: Settings = { ...DEFAULT_SETTINGS };
+  let name: string | undefined;
   const settings = {
+    displayName: async () => name,
+    setDisplayName: async (next: string | null) => {
+      name = next?.trim() || undefined;
+      changes.notify();
+    },
+    exerciseRest: async () => new Map([["builtin:bench-press", 90]]),
     get: async () => stored,
     update: async (patch: Partial<Settings>) => {
       stored = { ...stored, ...patch };
@@ -21,11 +32,12 @@ function fakeRepositories() {
   return {
     value: { repositories: { settings } as unknown as Repositories, changes },
     stored: () => stored,
+    name: () => name,
   };
 }
 
 describe("Settings screen", () => {
-  it("switches units and default rest, and saves them", async () => {
+  it("switches units, default rest and display name, and saves them", async () => {
     const fake = fakeRepositories();
     await render(
       <RepositoriesProvider value={fake.value}>
@@ -33,7 +45,6 @@ describe("Settings screen", () => {
       </RepositoriesProvider>,
     );
 
-    expect(screen.getByRole("header", { name: "Settings" })).toBeOnTheScreen();
     const kg = await screen.findByRole("button", { name: "Kilograms (kg)" });
     expect(kg).toBeSelected();
 
@@ -49,5 +60,12 @@ describe("Settings screen", () => {
     expect(
       await screen.findByRole("button", { name: "Pounds (lb)", selected: true }),
     ).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: /Per-exercise rest/ })).toHaveTextContent(/1/);
+
+    const field = screen.getByLabelText("Display name");
+    await fireEvent(field, "focus");
+    await fireEvent.changeText(field, " Eamonn ");
+    await fireEvent(field, "endEditing");
+    expect(fake.name()).toBe("Eamonn");
   });
 });
