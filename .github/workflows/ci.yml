@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    # This job name is the required status check on main. Rename both together.
+    name: checks
+    runs-on: ubuntu-latest
+    # No secrets, no OIDC: safe to run for fork PRs (after maintainer approval).
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Format
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test --ci
+
+      # Checks dependency versions match the Expo SDK and the app config is valid.
+      - name: Expo doctor
+        run: pnpm expo:doctor
+
+      # Proves Metro can resolve and bundle the app (catches pnpm/Metro resolution issues
+      # without a native build).
+      - name: Bundle Android JS
+        run: pnpm bundle:android
