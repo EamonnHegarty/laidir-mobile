@@ -1,0 +1,241 @@
+// Small shared building blocks so screens look consistent. Colours come from the theme.
+import type { ReactNode } from "react";
+import {
+  Pressable,
+  type PressableProps,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  type TextInputProps,
+  type TextProps,
+  View,
+  type ViewProps,
+} from "react-native";
+
+import { Spacing } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
+
+export function Screen({ style, ...props }: ViewProps) {
+  const theme = useTheme();
+  return <View style={[styles.screen, { backgroundColor: theme.background }, style]} {...props} />;
+}
+
+type Tone = "default" | "secondary" | "danger" | "tint";
+
+export function Label({
+  tone = "default",
+  size = "body",
+  style,
+  ...props
+}: TextProps & { tone?: Tone; size?: "body" | "small" | "title" | "heading" }) {
+  const theme = useTheme();
+  const color =
+    tone === "secondary"
+      ? theme.textSecondary
+      : tone === "danger"
+        ? theme.danger
+        : tone === "tint"
+          ? theme.tint
+          : theme.text;
+  return <Text style={[styles[size], { color }, style]} {...props} />;
+}
+
+export function SectionHeader({ children }: { children: ReactNode }) {
+  return (
+    <Label tone="secondary" size="small" style={styles.sectionHeader} accessibilityRole="header">
+      {children}
+    </Label>
+  );
+}
+
+export function Row({
+  title,
+  subtitle,
+  right,
+  onPress,
+  accessibilityLabel,
+}: {
+  title: string;
+  subtitle?: string;
+  right?: ReactNode;
+  onPress?: () => void;
+  accessibilityLabel?: string;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? "button" : undefined}
+      accessibilityLabel={accessibilityLabel}
+      style={({ pressed }) => [
+        styles.row,
+        { borderBottomColor: theme.backgroundElement },
+        pressed && { backgroundColor: theme.backgroundElement },
+      ]}
+    >
+      <View style={styles.rowText}>
+        <Label>{title}</Label>
+        {subtitle ? (
+          <Label tone="secondary" size="small">
+            {subtitle}
+          </Label>
+        ) : null}
+      </View>
+      {right}
+    </Pressable>
+  );
+}
+
+export function Chip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      style={[styles.chip, { backgroundColor: selected ? theme.tint : theme.backgroundElement }]}
+    >
+      <Text style={[styles.small, { color: selected ? theme.onTint : theme.text }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/** A horizontally scrolling row of chips, e.g. filters. */
+export function ChipRow({ children }: { children: ReactNode }) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.chipRow}
+      keyboardShouldPersistTaps="handled"
+    >
+      {children}
+    </ScrollView>
+  );
+}
+
+/** Chips that wrap onto several lines, e.g. picking from an enum in a form. */
+export function ChipGrid({ children }: { children: ReactNode }) {
+  return <View style={styles.chipGrid}>{children}</View>;
+}
+
+export function Field({ style, ...props }: TextInputProps) {
+  const theme = useTheme();
+  return (
+    <TextInput
+      placeholderTextColor={theme.textSecondary}
+      style={[styles.field, { backgroundColor: theme.backgroundElement, color: theme.text }, style]}
+      {...props}
+    />
+  );
+}
+
+export function Button({
+  title,
+  tone = "tint",
+  style,
+  ...props
+}: PressableProps & { title: string; tone?: "tint" | "danger" | "plain" }) {
+  const theme = useTheme();
+  const background =
+    tone === "tint" ? theme.tint : tone === "danger" ? theme.danger : theme.backgroundElement;
+  const color = tone === "plain" ? theme.text : theme.onTint;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      style={(state) => [
+        styles.button,
+        { backgroundColor: background, opacity: state.pressed || props.disabled ? 0.6 : 1 },
+        typeof style === "function" ? style(state) : style,
+      ]}
+      {...props}
+    >
+      <Text style={[styles.buttonText, { color }]}>{title}</Text>
+    </Pressable>
+  );
+}
+
+/** A text button for headers ("Edit", "Save", "New"). */
+export function HeaderButton({
+  title,
+  onPress,
+  disabled,
+}: {
+  title: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      hitSlop={12}
+      style={{ opacity: disabled ? 0.4 : 1 }}
+    >
+      <Text style={[styles.headerButton, { color: theme.tint }]}>{title}</Text>
+    </Pressable>
+  );
+}
+
+export function EmptyState({ title, message }: { title: string; message?: string }) {
+  return (
+    <View style={styles.empty}>
+      <Label size="heading">{title}</Label>
+      {message ? (
+        <Label tone="secondary" style={styles.center}>
+          {message}
+        </Label>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  body: { fontSize: 16, lineHeight: 22 },
+  small: { fontSize: 13, lineHeight: 18 },
+  heading: { fontSize: 18, lineHeight: 24, fontWeight: 600 },
+  title: { fontSize: 26, lineHeight: 32, fontWeight: 700 },
+  sectionHeader: {
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.two,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  rowText: { flex: 1, gap: 2 },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  chipRow: { gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
+  chipGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.two },
+  field: {
+    fontSize: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  button: { paddingVertical: 12, paddingHorizontal: Spacing.three, borderRadius: 10 },
+  buttonText: { fontSize: 16, fontWeight: 600, textAlign: "center" },
+  headerButton: { fontSize: 16, fontWeight: 600 },
+  empty: { alignItems: "center", gap: Spacing.two, padding: Spacing.five },
+  center: { textAlign: "center" },
+});
