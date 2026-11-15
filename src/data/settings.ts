@@ -45,37 +45,49 @@ export function settingsRepo({ db }: { db: Db }) {
 
     /**
      * Rest time chosen for each exercise during a workout (exercise ref → seconds). It wins over the
-     * Workout template's rest and the default. Device-only for now: the v1 contract has nowhere to
-     * sync it.
+     * Workout template's rest and the default. Stored as Profile's `exercise_rest_seconds`, so it
+     * becomes part of the Profile at first login.
      */
     async exerciseRest(): Promise<Map<string, number>> {
-      const rows = await db.all<{ key: string; value: string }>(
-        "SELECT key, value FROM settings WHERE key LIKE 'rest:%'",
-      );
-      return new Map(rows.map((row) => [row.key.slice(REST_PREFIX.length), JSON.parse(row.value)]));
+      return new Map(Object.entries(await readRestMap(db)));
     },
 
     /** Remembers the rest for one exercise; `null` goes back to the template/default. */
     async setExerciseRest(ref: string, seconds: number | null): Promise<void> {
-      const key = REST_PREFIX + ref;
-      if (seconds === null) {
-        await db.run("DELETE FROM settings WHERE key = ?", [key]);
-        return;
+      if (seconds !== null && (!Number.isInteger(seconds) || seconds < 0 || seconds > MAX_REST)) {
+        throw new RangeError(`Rest must be 0 to ${MAX_REST} seconds`);
       }
-      if (!Number.isInteger(seconds) || seconds < 0 || seconds > MAX_REST_SECONDS) {
-        throw new RangeError(`Rest must be 0 to ${MAX_REST_SECONDS} seconds`);
-      }
-      await db.run(
-        "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
-        [key, JSON.stringify(seconds)],
-      );
+      await db.transaction(async (tx) => {
+        const map = await readRestMap(tx);
+        if (seconds === null) delete map[ref];
+        else {
+          if (!(ref in map) && Object.keys(map).length >= MAX_EXERCISE_RESTS) {
+            throw new RangeError(`At most ${MAX_EXERCISE_RESTS} exercises can have their own rest`);
+          }
+          map[ref] = seconds;
+        }
+        await tx.run(
+          "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+          [REST_KEY, JSON.stringify(map)],
+        );
+      });
     },
   };
 }
 
-const REST_PREFIX = "rest:";
-/** Same ceiling as the contract's RestSeconds. */
-const MAX_REST_SECONDS = 3600;
+/** Profile field name, and its limits from the contract (RestSeconds, maxProperties). */
+const REST_KEY = "exercise_rest_seconds";
+const MAX_REST = 3600;
+const MAX_EXERCISE_RESTS = 500;
+
+type RestMap = NonNullable<Profile["exercise_rest_seconds"]>;
+
+async function readRestMap(db: Db): Promise<RestMap> {
+  const [row] = await db.all<{ value: string }>("SELECT value FROM settings WHERE key = ?", [
+    REST_KEY,
+  ]);
+  return row ? (JSON.parse(row.value) as RestMap) : {};
+}
 
 function pick(stored: Partial<Record<string, unknown>>): Partial<Settings> {
   return Object.fromEntries(KEYS.filter((k) => k in stored).map((k) => [k, stored[k]]));

@@ -72,3 +72,10 @@ export async function storedProblems(db: Db): Promise<string[]> {
   }
   return problems;
 }
+
+/** Contract errors for one Profile field's value (Profile itself needs a Cognito id to exist). */
+export function profileFieldErrors(field: string, value: unknown): string[] {
+  const validate = ajv.compile({ $ref: `${BASE}Profile.json#/properties/${field}` });
+  if (validate(value)) return [];
+  return (validate.errors ?? []).map((e) => `${e.instancePath || "/"} ${e.message ?? ""}`);
+}
