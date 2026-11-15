@@ -43,6 +43,9 @@ updates:
       - dependency-name: "@types/react"
         update-types: [version-update:semver-minor, version-update:semver-major]
       - dependency-name: "react-native"
+      # Expo pins these to exact versions per SDK; even a patch bump fails expo-doctor.
+      - dependency-name: "react-native-reanimated"
+      - dependency-name: "react-native-worklets"
       - dependency-name: "react-native-*"
         update-types: [version-update:semver-minor, version-update:semver-major]
       # eslint-config-expo's plugins (react, import) don't support ESLint 10 yet.
