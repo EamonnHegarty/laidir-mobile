@@ -1,7 +1,7 @@
 # laidir-mobile: agent notes
 
 Láidir shared context (read first, follow its working rules):
-`\wsl.localhost\Ubuntu\home\eamonn\documents\repos\laidir-context\CONTEXT.md`
+`\\wsl.localhost\Ubuntu\home\eamonn\documents\repos\laidir-context\CONTEXT.md`
 (WSL: `~/documents/repos/laidir-context/CONTEXT.md`).
 
 - The data contract is owned by `EamonnHegarty/laidir-api` (OpenAPI + `schemas/v1/` + `catalogue/v1/`). Local storage
