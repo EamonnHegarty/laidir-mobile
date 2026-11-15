@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
 
+import { Pill, PillRow, RowGroup } from "@/components/glas";
 import {
   Button,
   EmptyState,
@@ -77,9 +78,9 @@ export default function RoutineScreen() {
         {folder || routine.notes ? (
           <View style={styles.summary}>
             {folder ? (
-              <Label tone="secondary" size="small">
-                Program: {folder.name}
-              </Label>
+              <PillRow>
+                <Pill icon="list_alt" label={folder.name} />
+              </PillRow>
             ) : null}
             {routine.notes ? <Label>{routine.notes}</Label> : null}
           </View>
@@ -89,29 +90,31 @@ export default function RoutineScreen() {
         {routine.exercises.length === 0 ? (
           <EmptyState title="No exercises" message="Tap Edit to add some." />
         ) : (
-          routine.exercises.map((exercise, index) => {
-            const info = describeExercise(exercise.exercise_id, custom.get(exercise.exercise_id));
-            const rest =
-              exercise.rest_seconds !== undefined
-                ? ` · rest ${formatDuration(exercise.rest_seconds)}`
-                : "";
-            return (
-              <Row
-                key={`${exercise.exercise_id}-${index}`}
-                title={info.name}
-                subtitle={`${setSummary(exercise)}${rest}`}
-                onPress={
-                  info.source === "unknown"
-                    ? undefined
-                    : () =>
-                        router.navigate({
-                          pathname: "/exercises/[ref]",
-                          params: { ref: exercise.exercise_id },
-                        })
-                }
-              />
-            );
-          })
+          <RowGroup style={styles.group}>
+            {routine.exercises.map((exercise, index) => {
+              const info = describeExercise(exercise.exercise_id, custom.get(exercise.exercise_id));
+              const rest =
+                exercise.rest_seconds !== undefined
+                  ? ` · rest ${formatDuration(exercise.rest_seconds)}`
+                  : "";
+              return (
+                <Row
+                  key={`${exercise.exercise_id}-${index}`}
+                  title={info.name}
+                  subtitle={`${setSummary(exercise)}${rest}`}
+                  onPress={
+                    info.source === "unknown"
+                      ? undefined
+                      : () =>
+                          router.navigate({
+                            pathname: "/exercises/[ref]",
+                            params: { ref: exercise.exercise_id },
+                          })
+                  }
+                />
+              );
+            })}
+          </RowGroup>
         )}
 
         <View style={styles.actions}>
@@ -120,7 +123,7 @@ export default function RoutineScreen() {
             disabled={routine.exercises.length === 0}
             onPress={() => startSession(repos, () => router.navigate("/active"), routine)}
           />
-          <Button title="Delete workout" tone="danger" onPress={confirmDelete} />
+          <Button title="Delete workout" tone="plain" onPress={confirmDelete} />
         </View>
       </ScrollView>
     </Screen>
@@ -131,4 +134,5 @@ const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.five * 2 },
   summary: { padding: Spacing.three, gap: Spacing.one },
   actions: { padding: Spacing.three, gap: Spacing.two },
+  group: { marginHorizontal: Spacing.three },
 });

@@ -1,6 +1,7 @@
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 
-import { HeaderButton, Screen } from "@/components/ui";
+import { IconAction, PageHeader } from "@/components/glas";
+import { Screen } from "@/components/ui";
 import { useLiveQuery } from "@/data/database-provider";
 import { ExerciseBrowser } from "@/features/exercises/exercise-browser";
 import { exerciseListItems } from "@/features/exercises/model";
@@ -12,12 +13,16 @@ export default function ExercisesScreen() {
 
   return (
     <Screen>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <HeaderButton title="New" onPress={() => router.push("/exercises/form")} />
-          ),
-        }}
+      <PageHeader
+        title="Exercises"
+        right={
+          <IconAction
+            icon="add"
+            label="New exercise"
+            tone="tint"
+            onPress={() => router.push("/exercises/form")}
+          />
+        }
       />
       <ExerciseBrowser
         items={items}
