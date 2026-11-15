@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/EamonnHegarty/laidir-api/main/schemas/v1/Exercise.json",
+  "title": "Exercise",
+  "description": "A user's custom exercise. Built-in exercises come from the static catalogue and are referenced as `builtin:<slug>`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "type",
+    "schema_version",
+    "created_at",
+    "updated_at",
+    "deleted_at",
+    "name",
+    "equipment",
+    "primary_muscle",
+    "tracking"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "common.json#/$defs/Uuid"
+    },
+    "type": {
+      "const": "EXERCISE"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "created_at": {
+      "$ref": "common.json#/$defs/Timestamp"
+    },
+    "updated_at": {
+      "$ref": "common.json#/$defs/Timestamp"
+    },
+    "deleted_at": {
+      "$ref": "common.json#/$defs/DeletedAt"
+    },
+    "name": {
+      "$ref": "common.json#/$defs/Name"
+    },
+    "equipment": {
+      "$ref": "common.json#/$defs/Equipment"
+    },
+    "primary_muscle": {
+      "$ref": "common.json#/$defs/MuscleGroup"
+    },
+    "secondary_muscles": {
+      "type": "array",
+      "items": {
+        "$ref": "common.json#/$defs/MuscleGroup"
+      },
+      "uniqueItems": true,
+      "maxItems": 10
+    },
+    "tracking": {
+      "$ref": "common.json#/$defs/Tracking"
+    },
+    "notes": {
+      "$ref": "common.json#/$defs/Notes"
+    }
+  }
+}

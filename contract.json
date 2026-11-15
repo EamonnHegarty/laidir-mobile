@@ -1,0 +1,16 @@
+{
+  "$comment": "The laidir-api contract this app is built against. Bump `ref` (a full commit SHA on laidir-api main) and run `pnpm contract:sync`.",
+  "repo": "EamonnHegarty/laidir-api",
+  "ref": "450ff112787904dc791586e0a7f1d3034ea8122e",
+  "files": [
+    "openapi/openapi.bundled.json",
+    "schemas/v1/common.json",
+    "schemas/v1/Profile.json",
+    "schemas/v1/Exercise.json",
+    "schemas/v1/RoutineFolder.json",
+    "schemas/v1/Routine.json",
+    "schemas/v1/Workout.json",
+    "catalogue/v1/exercises.json",
+    "catalogue/v1/exercises.schema.json"
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/EamonnHegarty/laidir-api/main/schemas/v1/Workout.json",
+  "title": "Workout",
+  "description": "A logged session with its sets embedded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "type",
+    "schema_version",
+    "created_at",
+    "updated_at",
+    "deleted_at",
+    "name",
+    "started_at",
+    "exercises"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "common.json#/$defs/Uuid"
+    },
+    "type": {
+      "const": "WORKOUT"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "created_at": {
+      "$ref": "common.json#/$defs/Timestamp"
+    },
+    "updated_at": {
+      "$ref": "common.json#/$defs/Timestamp"
+    },
+    "deleted_at": {
+      "$ref": "common.json#/$defs/DeletedAt"
+    },
+    "name": {
+      "$ref": "common.json#/$defs/Name"
+    },
+    "routine_id": {
+      "description": "The routine this workout was started from, if any.",
+      "$ref": "common.json#/$defs/Uuid"
+    },
+    "started_at": {
+      "$ref": "common.json#/$defs/Timestamp"
+    },
+    "ended_at": {
+      "description": "Absent while the workout is in progress.",
+      "$ref": "common.json#/$defs/Timestamp"
+    },
+    "notes": {
+      "$ref": "common.json#/$defs/Notes"
+    },
+    "exercises": {
+      "description": "In the order they were performed.",
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "$ref": "common.json#/$defs/WorkoutExercise"
+      }
+    }
+  }
+}

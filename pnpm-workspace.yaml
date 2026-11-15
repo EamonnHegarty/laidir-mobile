@@ -4,3 +4,8 @@ allowBuilds:
   # (@parcel/watcher-win32-x64, -linux-x64-glibc, ...); its install script only builds from
   # source as a fallback, so it isn't needed.
   "@parcel/watcher": false
+
+peerDependencyRules:
+  allowedVersions:
+    # openapi-typescript 7 declares typescript ^5 but works with 6 (laidir-api uses the same pair).
+    openapi-typescript>typescript: "6"

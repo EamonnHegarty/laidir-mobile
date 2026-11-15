@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/EamonnHegarty/laidir-api/main/catalogue/v1/exercises.schema.json",
+  "title": "Built-in exercise catalogue (v1)",
+  "description": "Static list of built-in exercises, shipped with the app and API. Workouts and routines reference an entry as exercise_id \"builtin:<slug>\". Slugs are permanent: deprecate entries, never delete or rename a slug. Any change bumps catalogue_version.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["catalogue_version", "exercises"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "catalogue_version": {
+      "description": "Incremented on every change to the catalogue (add, deprecate, rename a display name, change muscles or tracking).",
+      "type": "integer",
+      "minimum": 1
+    },
+    "exercises": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/CatalogueExercise" }
+    }
+  },
+  "$defs": {
+    "CatalogueExercise": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug", "name", "equipment", "primary_muscle", "tracking"],
+      "properties": {
+        "slug": {
+          "description": "Permanent identifier. Referenced as builtin:<slug>. Lowercase words joined by hyphens; equipment first where it matters (dumbbell-bench-press).",
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "maxLength": 92
+        },
+        "name": { "$ref": "../../schemas/v1/common.json#/$defs/Name" },
+        "equipment": { "$ref": "../../schemas/v1/common.json#/$defs/Equipment" },
+        "primary_muscle": { "$ref": "../../schemas/v1/common.json#/$defs/MuscleGroup" },
+        "secondary_muscles": {
+          "type": "array",
+          "items": { "$ref": "../../schemas/v1/common.json#/$defs/MuscleGroup" },
+          "uniqueItems": true,
+          "minItems": 1,
+          "maxItems": 10
+        },
+        "tracking": { "$ref": "../../schemas/v1/common.json#/$defs/Tracking" },
+        "deprecated": {
+          "description": "Hidden from pickers for new routines and workouts. Existing references keep resolving.",
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

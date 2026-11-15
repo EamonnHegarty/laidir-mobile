@@ -5,3 +5,4 @@ android/
 ios/
 pnpm-lock.yaml
 src/generated/
+contract/

@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/EamonnHegarty/laidir-api/main/schemas/v1/common.json",
+  "title": "Láidir common definitions (v1)",
+  "description": "Building blocks shared by every Láidir entity schema.",
+  "$defs": {
+    "Uuid": {
+      "description": "Client-generated UUID, lowercase hex. The Profile id is the user's Cognito sub (also a UUID).",
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Timestamp": {
+      "description": "ISO-8601 UTC with exactly three fractional digits, e.g. 2026-11-15T09:30:00.000Z. Sorts correctly as a string.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+    },
+    "DeletedAt": {
+      "description": "Soft-delete marker. null while the item is live; a timestamp once deleted. Tombstones are synced so other devices delete too.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "ExerciseRef": {
+      "description": "Reference to an exercise: `builtin:<slug>` for the built-in catalogue, or the UUID of one of the user's custom exercises.",
+      "type": "string",
+      "pattern": "^(builtin:[a-z0-9]+(-[a-z0-9]+)*|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$",
+      "maxLength": 100
+    },
+    "Name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "Notes": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "SetType": {
+      "type": "string",
+      "enum": ["normal", "warmup", "drop", "failure"]
+    },
+    "WeightKg": {
+      "description": "Weight in kilograms, stored at full precision. Apps convert for lb users and round only for display. For assisted exercises this is the assistance.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1000
+    },
+    "Reps": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000
+    },
+    "Rpe": {
+      "description": "Rate of perceived exertion, 1 to 10 in half steps.",
+      "type": "number",
+      "minimum": 1,
+      "maximum": 10,
+      "multipleOf": 0.5
+    },
+    "DurationSeconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 86400
+    },
+    "DistanceMetres": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "RestSeconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3600
+    },
+    "SortOrder": {
+      "description": "Position in a user-ordered list, ascending. Leave gaps (e.g. steps of 1000) so a move rewrites one item. Ties sort by name, then created_at.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000000
+    },
+    "SupersetGroup": {
+      "description": "Exercises in the same workout or routine with the same group number form a superset.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "Equipment": {
+      "type": "string",
+      "enum": [
+        "barbell",
+        "dumbbell",
+        "kettlebell",
+        "machine",
+        "cable",
+        "smith_machine",
+        "bodyweight",
+        "band",
+        "other"
+      ]
+    },
+    "MuscleGroup": {
+      "type": "string",
+      "enum": [
+        "chest",
+        "upper_back",
+        "lats",
+        "traps",
+        "lower_back",
+        "shoulders",
+        "biceps",
+        "triceps",
+        "forearms",
+        "abs",
+        "obliques",
+        "glutes",
+        "quads",
+        "hamstrings",
+        "adductors",
+        "abductors",
+        "calves",
+        "neck",
+        "full_body",
+        "cardio",
+        "other"
+      ]
+    },
+    "Tracking": {
+      "description": "Which set fields an exercise uses. weight_reps: weight_kg + reps. reps_only: reps. weighted_bodyweight / assisted_bodyweight: weight_kg (added / assistance) + reps. duration: duration_s. distance_duration: distance_m + duration_s. weight_distance: weight_kg + distance_m (e.g. carries).",
+      "type": "string",
+      "enum": [
+        "weight_reps",
+        "reps_only",
+        "weighted_bodyweight",
+        "assisted_bodyweight",
+        "duration",
+        "distance_duration",
+        "weight_distance"
+      ]
+    },
+    "RoutineExercise": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exercise_id", "sets"],
+      "properties": {
+        "exercise_id": {
+          "$ref": "#/$defs/ExerciseRef"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        },
+        "rest_seconds": {
+          "$ref": "#/$defs/RestSeconds"
+        },
+        "superset_group": {
+          "$ref": "#/$defs/SupersetGroup"
+        },
+        "sets": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 30,
+          "items": {
+            "$ref": "#/$defs/RoutineSet"
+          }
+        }
+      }
+    },
+    "RoutineSet": {
+      "description": "Targets for one set. All targets are optional; a rep range uses min and max.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["set_type"],
+      "properties": {
+        "set_type": {
+          "$ref": "#/$defs/SetType"
+        },
+        "target_reps_min": {
+          "$ref": "#/$defs/Reps"
+        },
+        "target_reps_max": {
+          "$ref": "#/$defs/Reps"
+        },
+        "target_weight_kg": {
+          "$ref": "#/$defs/WeightKg"
+        },
+        "target_rpe": {
+          "$ref": "#/$defs/Rpe"
+        },
+        "target_duration_s": {
+          "$ref": "#/$defs/DurationSeconds"
+        },
+        "target_distance_m": {
+          "$ref": "#/$defs/DistanceMetres"
+        }
+      }
+    },
+    "WorkoutExercise": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exercise_id", "sets"],
+      "properties": {
+        "exercise_id": {
+          "$ref": "#/$defs/ExerciseRef"
+        },
+        "notes": {
+          "$ref": "#/$defs/Notes"
+        },
+        "superset_group": {
+          "$ref": "#/$defs/SupersetGroup"
+        },
+        "sets": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/WorkoutSet"
+          }
+        }
+      }
+    },
+    "WorkoutSet": {
+      "description": "One performed set. Which measurement fields are used depends on the exercise's tracking type.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["set_type", "completed"],
+      "properties": {
+        "set_type": {
+          "$ref": "#/$defs/SetType"
+        },
+        "weight_kg": {
+          "$ref": "#/$defs/WeightKg"
+        },
+        "reps": {
+          "$ref": "#/$defs/Reps"
+        },
+        "duration_s": {
+          "$ref": "#/$defs/DurationSeconds"
+        },
+        "distance_m": {
+          "$ref": "#/$defs/DistanceMetres"
+        },
+        "rpe": {
+          "$ref": "#/$defs/Rpe"
+        },
+        "completed": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

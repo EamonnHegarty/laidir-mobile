@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/EamonnHegarty/laidir-api/main/schemas/v1/RoutineFolder.json",
+  "title": "RoutineFolder",
+  "description": "A user-named group of routines, ordered by sort_order. Routines point at their folder with folder_id. Deleting a folder: tombstone the folder (deleted_at) and push each of its routines with folder_id removed. Readers treat a folder_id that points to a missing or deleted folder as unfiled, so a routine moved into a folder on another device at the same moment is never lost.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "type",
+    "schema_version",
+    "created_at",
+    "updated_at",
+    "deleted_at",
+    "name",
+    "sort_order"
+  ],
+  "properties": {
+    "id": { "$ref": "common.json#/$defs/Uuid" },
+    "type": { "const": "ROUTINE_FOLDER" },
+    "schema_version": { "const": 1 },
+    "created_at": { "$ref": "common.json#/$defs/Timestamp" },
+    "updated_at": { "$ref": "common.json#/$defs/Timestamp" },
+    "deleted_at": { "$ref": "common.json#/$defs/DeletedAt" },
+    "name": { "$ref": "common.json#/$defs/Name" },
+    "sort_order": { "$ref": "common.json#/$defs/SortOrder" },
+    "notes": { "$ref": "common.json#/$defs/Notes" }
+  }
+}
