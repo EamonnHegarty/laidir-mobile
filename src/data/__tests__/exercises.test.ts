@@ -93,4 +93,14 @@ describe("exercises repository", () => {
     await repos.exercises.create(input);
     expect(await db.all("SELECT dirty FROM exercises")).toEqual([{ dirty: 1 }]);
   });
+
+  it("listAll includes tombstones so routines and history can still name them", async () => {
+    const { repos } = await setup();
+    const kept = await repos.exercises.create(input);
+    const gone = await repos.exercises.create({ ...input, name: "Gone" });
+    await repos.exercises.remove(gone.id);
+    expect((await repos.exercises.listAll()).map((e) => e.id).sort()).toEqual(
+      [kept.id, gone.id].sort(),
+    );
+  });
 });
