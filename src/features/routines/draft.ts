@@ -28,7 +28,7 @@ export function draftFromRoutine(routine: Routine): RoutineDraft {
 }
 
 export function draftToInput(draft: RoutineDraft): { input?: RoutineInput; problem?: string } {
-  if (!draft.name.trim()) return { problem: "Give the routine a name." };
+  if (!draft.name.trim()) return { problem: "Give the workout a name." };
   return {
     input: {
       name: draft.name,

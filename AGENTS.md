@@ -8,6 +8,9 @@ Láidir shared context (read first, follow its working rules):
   must match the v1 schemas exactly. Never change the shape here; change it in laidir-api first.
 - Package manager is **pnpm**, but add dependencies with `npx expo install <pkg>`.
 - Before declaring work done: `pnpm check`.
+- **UI words vs contract names.** Screens say **Program** for a `RoutineFolder` (e.g. Push/Pull/Legs) and **Workout**
+  for a `Routine` (a template, e.g. Push). A logged session is a `Workout` entity, shown as a session in History.
+  Code, routes (`/routines/...`) and storage keep the contract names.
 
 This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
 
