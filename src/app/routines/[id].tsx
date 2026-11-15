@@ -39,13 +39,13 @@ export default function RoutineScreen() {
   if (!routine || routine.deleted_at !== null) {
     return (
       <Screen>
-        <EmptyState title="Routine not found" message="It may have been deleted." />
+        <EmptyState title="Workout not found" message="It may have been deleted." />
       </Screen>
     );
   }
 
   const confirmDelete = () =>
-    Alert.alert(`Delete ${routine.name}?`, "Workouts you logged from it are kept.", [
+    Alert.alert(`Delete ${routine.name}?`, "Sessions you logged from it stay in History.", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
@@ -77,7 +77,7 @@ export default function RoutineScreen() {
           <View style={styles.summary}>
             {folder ? (
               <Label tone="secondary" size="small">
-                In {folder.name}
+                Program: {folder.name}
               </Label>
             ) : null}
             {routine.notes ? <Label>{routine.notes}</Label> : null}
@@ -114,7 +114,7 @@ export default function RoutineScreen() {
         )}
 
         <View style={styles.actions}>
-          <Button title="Delete routine" tone="danger" onPress={confirmDelete} />
+          <Button title="Delete workout" tone="danger" onPress={confirmDelete} />
         </View>
       </ScrollView>
     </Screen>

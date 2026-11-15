@@ -46,7 +46,7 @@ describe("RoutineEditor", () => {
     await render(<Harness onDraft={onDraft} />);
     const last = () => onDraft.mock.calls.at(-1)![0] as RoutineDraft;
 
-    await fireEvent.changeText(screen.getByLabelText("Routine name"), "Push");
+    await fireEvent.changeText(screen.getByLabelText("Workout name"), "Push");
     await fireEvent.press(screen.getByRole("button", { name: "Push/Pull/Legs" }));
     expect(last()).toMatchObject({ name: "Push", folder_id: folder.id });
 

@@ -4,7 +4,7 @@ export default function WorkoutScreen() {
   return (
     <PlaceholderScreen
       title="Workout"
-      description="Start an empty workout or start from a routine."
+      description="Start an empty workout or one from your programs."
     />
   );
 }

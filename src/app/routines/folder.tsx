@@ -19,7 +19,7 @@ export default function FolderScreen() {
   if (id && !query.data) {
     return (
       <Screen>
-        <EmptyState title="Folder not found" message="It may have been deleted." />
+        <EmptyState title="Program not found" message="It may have been deleted." />
       </Screen>
     );
   }
@@ -45,11 +45,11 @@ function FolderForm({ folder }: { folder?: RoutineFolder }) {
   const confirmDelete = (target: RoutineFolder) =>
     Alert.alert(
       `Delete ${target.name}?`,
-      "The folder is removed. Its routines are kept and move to Other routines.",
+      "The program is removed. Its workouts are kept and move to Other workouts.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Delete folder",
+          text: "Delete program",
           style: "destructive",
           onPress: async () => {
             await repos.routines.removeFolder(target.id);
@@ -61,22 +61,22 @@ function FolderForm({ folder }: { folder?: RoutineFolder }) {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: folder ? "Edit folder" : "New folder" }} />
+      <Stack.Screen options={{ title: folder ? "Edit program" : "New program" }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Field
           value={name}
           onChangeText={setName}
-          placeholder="Folder name, e.g. Push/Pull/Legs"
-          accessibilityLabel="Folder name"
+          placeholder="Program name, e.g. Push/Pull/Legs"
+          accessibilityLabel="Program name"
           maxLength={100}
           autoFocus
           returnKeyType="done"
           onSubmitEditing={save}
         />
         {problem ? <Label tone="danger">{problem}</Label> : null}
-        <Button title={folder ? "Save" : "Create folder"} onPress={save} />
+        <Button title={folder ? "Save" : "Create program"} onPress={save} />
         {folder ? (
-          <Button title="Delete folder" tone="danger" onPress={() => confirmDelete(folder)} />
+          <Button title="Delete program" tone="danger" onPress={() => confirmDelete(folder)} />
         ) : null}
       </ScrollView>
     </Screen>

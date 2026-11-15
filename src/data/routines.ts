@@ -43,13 +43,13 @@ const nextRoutineSortOrder = (db: Db, folderId: string | undefined) =>
 export function routinesRepo({ db, clock, newId }: Deps) {
   async function liveFolder(tx: Db, id: string) {
     const folder = await readEntity<RoutineFolder>(tx, "ROUTINE_FOLDER", id);
-    if (!folder || folder.deleted_at !== null) throw new NotFoundError("Folder", id);
+    if (!folder || folder.deleted_at !== null) throw new NotFoundError("Program", id);
     return folder;
   }
 
   async function liveRoutine(tx: Db, id: string) {
     const routine = await readEntity<Routine>(tx, "ROUTINE", id);
-    if (!routine || routine.deleted_at !== null) throw new NotFoundError("Routine", id);
+    if (!routine || routine.deleted_at !== null) throw new NotFoundError("Workout", id);
     return routine;
   }
 
@@ -72,7 +72,7 @@ export function routinesRepo({ db, clock, newId }: Deps) {
           created_at: now,
           updated_at: now,
           deleted_at: null,
-          name: cleanName(name, "Folder name"),
+          name: cleanName(name, "Program name"),
           sort_order: await nextSortOrder(tx, "routine_folders", "1 = 1"),
         };
         await writeEntity(tx, doc);
@@ -85,7 +85,7 @@ export function routinesRepo({ db, clock, newId }: Deps) {
         const current = await liveFolder(tx, id);
         const doc: RoutineFolder = {
           ...current,
-          name: cleanName(name, "Folder name"),
+          name: cleanName(name, "Program name"),
           updated_at: nextUpdatedAt(clock, current.updated_at),
         };
         await writeEntity(tx, doc);
@@ -162,7 +162,7 @@ export function routinesRepo({ db, clock, newId }: Deps) {
           created_at: now,
           updated_at: now,
           deleted_at: null,
-          name: cleanName(input.name, "Routine name"),
+          name: cleanName(input.name, "Workout name"),
           notes: input.notes?.trim() ? input.notes.trim() : undefined,
           folder_id: input.folder_id,
           sort_order: await nextRoutineSortOrder(tx, input.folder_id),
@@ -186,7 +186,7 @@ export function routinesRepo({ db, clock, newId }: Deps) {
           created_at: current.created_at,
           updated_at: nextUpdatedAt(clock, current.updated_at),
           deleted_at: null,
-          name: cleanName(input.name, "Routine name"),
+          name: cleanName(input.name, "Workout name"),
           notes: input.notes?.trim() ? input.notes.trim() : undefined,
           folder_id: input.folder_id,
           sort_order: moved ? await nextRoutineSortOrder(tx, input.folder_id) : current.sort_order,

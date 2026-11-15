@@ -22,8 +22,8 @@ export default function RoutinesScreen() {
 
   const showNewMenu = () =>
     Alert.alert("Create", undefined, [
-      { text: "New folder", onPress: newFolder },
-      { text: "New routine", onPress: () => newRoutine() },
+      { text: "New program", onPress: newFolder },
+      { text: "New workout", onPress: () => newRoutine() },
       { text: "Cancel", style: "cancel" },
     ]);
 
@@ -32,7 +32,7 @@ export default function RoutinesScreen() {
   const sections: Section[] = [
     ...grouped.folders.map((g) => ({ folder: g.folder, title: g.folder.name, data: g.routines })),
     ...(grouped.unfiled.length > 0 || grouped.folders.length === 0
-      ? [{ title: grouped.folders.length > 0 ? "Other routines" : "", data: grouped.unfiled }]
+      ? [{ title: grouped.folders.length > 0 ? "Other workouts" : "", data: grouped.unfiled }]
       : []),
   ];
   const empty = grouped.folders.length === 0 && grouped.unfiled.length === 0;
@@ -45,11 +45,11 @@ export default function RoutinesScreen() {
       {empty ? (
         <View style={styles.empty}>
           <EmptyState
-            title="No routines yet"
-            message="Build a routine once, then start a workout from it. Group them into folders like Push/Pull/Legs."
+            title="No programs yet"
+            message="Make a program like Push/Pull/Legs, add its workouts (Push, Pull, Legs), then start one when you train."
           />
-          <Button title="New routine" onPress={() => newRoutine()} />
-          <Button title="New folder" tone="plain" onPress={newFolder} />
+          <Button title="New program" onPress={newFolder} />
+          <Button title="New workout" tone="plain" onPress={() => newRoutine()} />
         </View>
       ) : (
         <SectionList
@@ -82,7 +82,7 @@ export default function RoutinesScreen() {
           renderSectionFooter={({ section }) =>
             section.folder && section.data.length === 0 ? (
               <Label tone="secondary" size="small" style={styles.emptyFolder}>
-                No routines in this folder yet. Tap + to add one.
+                No workouts in this program yet. Tap + to add one.
               </Label>
             ) : null
           }

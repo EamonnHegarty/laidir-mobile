@@ -50,7 +50,7 @@ export default function EditRoutineScreen() {
   if (!initial) {
     return (
       <Screen>
-        <EmptyState title="Routine not found" message="It may have been deleted." />
+        <EmptyState title="Workout not found" message="It may have been deleted." />
       </Screen>
     );
   }
@@ -98,7 +98,7 @@ function Editor({
   };
 
   usePreventRemove(dirty, ({ data }) => {
-    Alert.alert("Discard changes?", "Your changes to this routine haven't been saved.", [
+    Alert.alert("Discard changes?", "Your changes to this workout haven't been saved.", [
       { text: "Keep editing", style: "cancel" },
       {
         text: "Discard",
@@ -138,7 +138,7 @@ function Editor({
     <Screen>
       <Stack.Screen
         options={{
-          title: id ? "Edit routine" : "New routine",
+          title: id ? "Edit workout" : "New workout",
           headerRight: () => <HeaderButton title="Save" onPress={save} />,
         }}
       />

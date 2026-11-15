@@ -26,7 +26,7 @@ export default function RootLayout() {
             <NativeTabs.Trigger.Icon md="history" />
           </NativeTabs.Trigger>
           <NativeTabs.Trigger name="routines">
-            <NativeTabs.Trigger.Label>Routines</NativeTabs.Trigger.Label>
+            <NativeTabs.Trigger.Label>Programs</NativeTabs.Trigger.Label>
             <NativeTabs.Trigger.Icon md="list_alt" />
           </NativeTabs.Trigger>
           <NativeTabs.Trigger name="exercises">

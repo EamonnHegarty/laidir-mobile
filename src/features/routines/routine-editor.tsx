@@ -66,8 +66,8 @@ export function RoutineEditor({
       <Field
         value={draft.name}
         onChangeText={(name) => onChange({ ...draft, name })}
-        placeholder="Routine name, e.g. Push"
-        accessibilityLabel="Routine name"
+        placeholder="Workout name, e.g. Push"
+        accessibilityLabel="Workout name"
         maxLength={100}
         style={styles.name}
       />
@@ -75,7 +75,7 @@ export function RoutineEditor({
       {folders.length > 0 ? (
         <View style={styles.section}>
           <Label tone="secondary" size="small">
-            Folder
+            Program
           </Label>
           <ChipGrid>
             <Chip
@@ -128,7 +128,7 @@ export function RoutineEditor({
         value={draft.notes}
         onChangeText={(notes) => onChange({ ...draft, notes })}
         placeholder="Notes (optional)"
-        accessibilityLabel="Routine notes"
+        accessibilityLabel="Workout notes"
         multiline
         maxLength={2000}
         style={styles.notes}
