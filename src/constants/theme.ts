@@ -4,7 +4,9 @@ export const Colors = {
     textSecondary: "#60646C",
     background: "#FFFFFF",
     backgroundElement: "#F0F0F3",
-    tint: "#208AEF",
+    tint: "#1F7AE0",
+    onTint: "#FFFFFF",
+    danger: "#D93025",
   },
   dark: {
     text: "#ECEDEE",
@@ -12,6 +14,8 @@ export const Colors = {
     background: "#000000",
     backgroundElement: "#212225",
     tint: "#4FA3F7",
+    onTint: "#000000",
+    danger: "#FF6B5E",
   },
 } as const;
 
