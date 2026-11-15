@@ -1,3 +1,4 @@
+import { useScreenAwake } from "@/lib/keep-awake";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Keyboard, StyleSheet, View } from "react-native";
@@ -9,6 +10,7 @@ import { useLiveQuery, useRepositories } from "@/data/database-provider";
 import type { Settings } from "@/data/settings";
 import type { LoggedSet } from "@/data/workouts";
 import { openExercisePicker } from "@/features/exercises/exercise-picker";
+import { installRestAlerts } from "@/features/workout/rest-alert";
 import { restTimer } from "@/features/workout/rest-timer";
 import { addExercises, cleanForFinish, summarise } from "@/features/workout/session";
 import { SessionEditor } from "@/features/workout/session-editor";
@@ -71,7 +73,11 @@ function previousFor(
 
 const SAVE_DELAY_MS = 400;
 
+installRestAlerts();
+
 function ActiveSession({ initial }: { initial: Loaded }) {
+  // The phone shouldn't sleep between sets.
+  useScreenAwake("active-workout");
   const router = useRouter();
   const repos = useRepositories();
   const { workout, routine, custom, settings } = initial;
