@@ -3,7 +3,7 @@ import { Stack, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Keyboard, StyleSheet, View } from "react-native";
 
-import { Button, EmptyState, HeaderButton, Screen } from "@/components/ui";
+import { Button, EmptyState, Label, Screen } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import type { Exercise, ExerciseRef, Routine, Workout, WorkoutExercise } from "@/data/contract";
 import { useLiveQuery, useRepositories } from "@/data/database-provider";
@@ -14,7 +14,8 @@ import { installRestAlerts } from "@/features/workout/rest-alert";
 import { restTimer } from "@/features/workout/rest-timer";
 import { addExercises, cleanForFinish, summarise } from "@/features/workout/session";
 import { SessionEditor } from "@/features/workout/session-editor";
-import { ElapsedTime, RestBar } from "@/features/workout/timers";
+import { formatTotalWeight } from "@/features/stats/format";
+import { ElapsedTime, FinishButton, RestBar } from "@/features/workout/timers";
 
 type Loaded = {
   workout: Workout;
@@ -60,7 +61,7 @@ export default function ActiveWorkoutScreen() {
   if (loaded === null) {
     return (
       <Screen>
-        <EmptyState title="No workout in progress" message="Start one from the Workout tab." />
+        <EmptyState title="No workout in progress" message="Start one from Programs." />
         <View style={styles.pad}>
           <Button title="Back" onPress={() => router.back()} />
         </View>
@@ -205,8 +206,15 @@ function ActiveSession({ initial }: { initial: Loaded }) {
       <Stack.Screen
         options={{
           title: "",
-          headerLeft: () => <ElapsedTime startedAt={workout.started_at} />,
-          headerRight: () => <HeaderButton title="Finish" onPress={finish} />,
+          headerLeft: () => (
+            <View style={styles.headerLeft}>
+              <ElapsedTime startedAt={workout.started_at} />
+              <Label tone="secondary">
+                · {formatTotalWeight(summarise(exercises).volumeKg, settings.weight_unit)}
+              </Label>
+            </View>
+          ),
+          headerRight: () => <FinishButton onPress={finish} />,
         }}
       />
       <SessionEditor
@@ -230,4 +238,5 @@ function ActiveSession({ initial }: { initial: Loaded }) {
 
 const styles = StyleSheet.create({
   pad: { padding: Spacing.three },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 4 },
 });

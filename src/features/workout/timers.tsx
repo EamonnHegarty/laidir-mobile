@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { ProgressBar } from "@/components/glas";
+import { Icon } from "@/components/icon";
 import { Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
@@ -52,17 +54,37 @@ export function RestBar() {
 
   return (
     <View style={[styles.bar, { backgroundColor: theme.backgroundElement }]}>
-      <View
-        style={[styles.fill, { backgroundColor: theme.tint, width: `${progress * 100}%` }]}
-        pointerEvents="none"
-      />
-      <BarButton label="−15" a11y="Rest 15 seconds less" onPress={() => restTimer.adjust(-15)} />
-      <Label size="heading" style={styles.time} accessibilityLiveRegion="polite">
-        Rest {formatDuration(left)}
-      </Label>
-      <BarButton label="+15" a11y="Rest 15 seconds more" onPress={() => restTimer.adjust(15)} />
-      <BarButton label="Skip" a11y="Skip rest" onPress={() => restTimer.stop()} />
+      <View style={styles.barTop}>
+        <Icon name="hourglass_top" size={22} color={theme.tint} />
+        <Label size="heading" style={styles.time} accessibilityLiveRegion="polite">
+          Rest {formatDuration(left)}
+        </Label>
+        <BarButton label="−15" a11y="Rest 15 seconds less" onPress={() => restTimer.adjust(-15)} />
+        <BarButton label="+15" a11y="Rest 15 seconds more" onPress={() => restTimer.adjust(15)} />
+        <BarButton label="Skip" a11y="Skip rest" onPress={() => restTimer.stop()} />
+      </View>
+      <ProgressBar progress={progress} />
     </View>
+  );
+}
+
+/** The filled "Finish" button in the workout's header. */
+export function FinishButton({ onPress }: { onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      hitSlop={8}
+      style={({ pressed }) => [
+        styles.finish,
+        { backgroundColor: theme.tint, opacity: pressed ? 0.7 : 1 },
+      ]}
+    >
+      <Label size="small" style={[styles.finishText, { color: theme.onTint }]}>
+        Finish
+      </Label>
+    </Pressable>
   );
 }
 
@@ -84,14 +106,14 @@ function BarButton({ label, a11y, onPress }: { label: string; a11y: string; onPr
 
 const styles = StyleSheet.create({
   bar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.three,
+    gap: Spacing.two,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-    overflow: "hidden",
+    paddingTop: Spacing.three - 4,
+    paddingBottom: Spacing.three,
   },
-  fill: { position: "absolute", left: 0, bottom: 0, height: 4 },
-  time: { flex: 1, textAlign: "center" },
+  barTop: { flexDirection: "row", alignItems: "center", gap: Spacing.three },
+  time: { flex: 1 },
+  finish: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 },
+  finishText: { fontWeight: 600 },
   button: { paddingHorizontal: Spacing.one },
 });
