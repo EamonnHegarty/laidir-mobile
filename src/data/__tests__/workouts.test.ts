@@ -26,6 +26,24 @@ describe("workouts repository", () => {
     expect(await storedProblems(db)).toEqual([]);
   });
 
+  it("knows when each workout template was last done, ignoring unfinished and deleted sessions", async () => {
+    const { clock, repos } = await setup();
+    const first = await repos.workouts.start({ name: "Push", routine_id: "r-push" });
+    await repos.workouts.finish(first.id);
+    clock.advance(24 * 60 * 60_000);
+    const second = await repos.workouts.start({ name: "Push", routine_id: "r-push" });
+    await repos.workouts.finish(second.id);
+    clock.advance(60_000);
+    const deleted = await repos.workouts.start({ name: "Pull", routine_id: "r-pull" });
+    await repos.workouts.finish(deleted.id);
+    await repos.workouts.remove(deleted.id);
+    await repos.workouts.start({ name: "Legs", routine_id: "r-legs" });
+
+    expect(await repos.workouts.lastDoneByRoutine()).toEqual(
+      new Map([["r-push", second.started_at]]),
+    );
+  });
+
   it("allows only one workout in progress", async () => {
     const { repos } = await setup();
     await repos.workouts.start({ name: "A" });

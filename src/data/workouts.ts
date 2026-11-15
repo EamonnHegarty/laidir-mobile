@@ -138,6 +138,16 @@ export function workoutsRepo({ db, clock, newId }: Deps) {
       );
     },
 
+    /** When each Workout template was last started, from finished sessions (routine id → started_at). */
+    async lastDoneByRoutine(): Promise<Map<string, Timestamp>> {
+      const rows = await db.all<{ routine_id: string; last: Timestamp }>(
+        `SELECT routine_id, MAX(started_at) AS last FROM workouts
+         WHERE deleted_at IS NULL AND ended_at IS NOT NULL AND routine_id IS NOT NULL
+         GROUP BY routine_id`,
+      );
+      return new Map(rows.map((row) => [row.routine_id, row.last]));
+    },
+
     /** Starts a workout. Only one can be in progress. */
     async start(input: WorkoutStart): Promise<Workout> {
       return db.transaction(async (tx) => {
