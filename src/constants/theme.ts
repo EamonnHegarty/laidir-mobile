@@ -45,3 +45,55 @@ export const Spacing = {
   four: 24,
   five: 32,
 } as const;
+
+/**
+ * Accent colours the user can pick in Settings (device-only). Each replaces the green roles of the
+ * palette (tint, onTint, success, doneRow) in light and dark; backgrounds and text stay the same.
+ * Light-mode tints are dark enough for white text on them and for text on the page.
+ */
+export const Accents = {
+  glas: {
+    name: "Glas",
+    description: "Green",
+    light: { tint: "#167A43", onTint: "#FFFFFF", doneRow: "#D7F0E0" },
+    dark: { tint: "#3DDC84", onTint: "#08130D", doneRow: "#173A27" },
+  },
+  farraige: {
+    name: "Farraige",
+    description: "Sea blue",
+    light: { tint: "#1565C0", onTint: "#FFFFFF", doneRow: "#D6E8FA" },
+    dark: { tint: "#4FB3FF", onTint: "#06121C", doneRow: "#12304A" },
+  },
+  omra: {
+    name: "Ómra",
+    description: "Amber",
+    light: { tint: "#A65F00", onTint: "#FFFFFF", doneRow: "#FBE9CC" },
+    dark: { tint: "#FFB547", onTint: "#1C1204", doneRow: "#43300F" },
+  },
+  corcra: {
+    name: "Corcra",
+    description: "Purple",
+    light: { tint: "#6A3FC8", onTint: "#FFFFFF", doneRow: "#E7DDFB" },
+    dark: { tint: "#B794FF", onTint: "#150B26", doneRow: "#2E2350" },
+  },
+  ros: {
+    name: "Rós",
+    description: "Pink",
+    light: { tint: "#B8326A", onTint: "#FFFFFF", doneRow: "#F9DCE7" },
+    dark: { tint: "#FF7AA8", onTint: "#22070F", doneRow: "#4A1A2C" },
+  },
+} as const;
+
+export type AccentName = keyof typeof Accents;
+export const ACCENT_NAMES = Object.keys(Accents) as AccentName[];
+export const DEFAULT_ACCENT: AccentName = "glas";
+
+export function isAccentName(value: unknown): value is AccentName {
+  return typeof value === "string" && value in Accents;
+}
+
+/** The full palette for a colour scheme with an accent applied. */
+export function paletteFor(scheme: ColorScheme, accent: AccentName) {
+  const a = Accents[accent][scheme];
+  return { ...Colors[scheme], tint: a.tint, onTint: a.onTint, success: a.tint, doneRow: a.doneRow };
+}

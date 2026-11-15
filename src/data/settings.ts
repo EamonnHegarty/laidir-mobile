@@ -1,3 +1,5 @@
+import { type AccentName, DEFAULT_ACCENT, isAccentName } from "@/constants/theme";
+
 import type { Profile } from "./contract";
 import type { Db } from "./db";
 
@@ -76,6 +78,26 @@ export function settingsRepo({ db }: { db: Db }) {
       );
     },
 
+    /**
+     * The accent colour picked in Settings. Device-only: it isn't a Profile field, so it never
+     * becomes part of the Profile item or syncs.
+     */
+    async accent(): Promise<AccentName> {
+      const [row] = await db.all<{ value: string }>("SELECT value FROM settings WHERE key = ?", [
+        ACCENT_KEY,
+      ]);
+      const value: unknown = row ? JSON.parse(row.value) : undefined;
+      return isAccentName(value) ? value : DEFAULT_ACCENT;
+    },
+
+    async setAccent(accent: AccentName): Promise<void> {
+      if (!isAccentName(accent)) throw new RangeError(`Unknown accent ${String(accent)}`);
+      await db.run(
+        "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+        [ACCENT_KEY, JSON.stringify(accent)],
+      );
+    },
+
     /** Remembers the rest for one exercise; `null` goes back to the template/default. */
     async setExerciseRest(ref: string, seconds: number | null): Promise<void> {
       if (seconds !== null && (!Number.isInteger(seconds) || seconds < 0 || seconds > MAX_REST)) {
@@ -104,6 +126,8 @@ const REST_KEY = "exercise_rest_seconds";
 const MAX_REST = 3600;
 const MAX_EXERCISE_RESTS = 500;
 const NAME_KEY = "display_name";
+/** Not a Profile field: the "local_" prefix marks device-only keys, left out of the Profile at login. */
+const ACCENT_KEY = "local_accent";
 const MAX_NAME = 50;
 
 type RestMap = NonNullable<Profile["exercise_rest_seconds"]>;

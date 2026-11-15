@@ -11,6 +11,7 @@ import { Spacing } from "@/constants/theme";
 import { CATALOGUE_VERSION } from "@/data/catalogue";
 import { useLiveQuery, useRepositories } from "@/data/database-provider";
 import type { Settings } from "@/data/settings";
+import { AccentPicker } from "@/features/settings/accent-picker";
 import { shareBackup } from "@/features/settings/backup";
 import { formatDuration } from "@/lib/units";
 
@@ -23,12 +24,13 @@ export default function SettingsScreen() {
   const repos = useRepositories();
   const [exporting, setExporting] = useState(false);
   const query = useLiveQuery(async (r) => {
-    const [settings, displayName, rests] = await Promise.all([
+    const [settings, displayName, rests, accent] = await Promise.all([
       r.settings.get(),
       r.settings.displayName(),
       r.settings.exerciseRest(),
+      r.settings.accent(),
     ]);
-    return { settings, displayName, rests: rests.size };
+    return { settings, displayName, rests: rests.size, accent };
   }, []);
   const update = (changes: Partial<Settings>) => void repos.settings.update(changes);
   const variant = (Constants.expoConfig?.extra as { variant?: string } | undefined)?.variant;
@@ -45,7 +47,7 @@ export default function SettingsScreen() {
   };
 
   if (!query.data) return <Screen />;
-  const { settings, displayName, rests } = query.data;
+  const { settings, displayName, rests, accent } = query.data;
 
   return (
     <Screen>
@@ -65,6 +67,14 @@ export default function SettingsScreen() {
             autoCapitalize="words"
           />
         </View>
+
+        <SectionHeader>Accent colour</SectionHeader>
+        <View style={styles.pad}>
+          <AccentPicker value={accent} onChange={(next) => void repos.settings.setAccent(next)} />
+        </View>
+        <Label tone="secondary" size="small" style={styles.note}>
+          Buttons, done sets, charts and the tab bar. Kept on this phone only.
+        </Label>
 
         <SectionHeader>Weight</SectionHeader>
         <Choice>
