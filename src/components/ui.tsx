@@ -189,6 +189,33 @@ export function HeaderButton({
   );
 }
 
+/** A small square button with a symbol (↑ ↓ ✕ −) and a spoken label. */
+export function IconButton({
+  label,
+  a11y,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  a11y: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={a11y}
+      accessibilityState={{ disabled }}
+      hitSlop={8}
+      style={[styles.iconButton, { opacity: disabled ? 0.3 : 1 }]}
+    >
+      <Label size="heading">{label}</Label>
+    </Pressable>
+  );
+}
+
 export function EmptyState({ title, message }: { title: string; message?: string }) {
   return (
     <View style={styles.empty}>
@@ -236,6 +263,7 @@ const styles = StyleSheet.create({
   button: { paddingVertical: 12, paddingHorizontal: Spacing.three, borderRadius: 10 },
   buttonText: { fontSize: 16, fontWeight: 600, textAlign: "center" },
   headerButton: { fontSize: 16, fontWeight: 600 },
+  iconButton: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   empty: { alignItems: "center", gap: Spacing.two, padding: Spacing.five },
   center: { textAlign: "center" },
 });
