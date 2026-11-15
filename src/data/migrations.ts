@@ -90,6 +90,10 @@ export const migrations: readonly string[] = [
     value TEXT NOT NULL
   ) STRICT;
   `,
+  // 2: time-ordered set_log, for the Profile stats (sets in a date range)
+  `
+  CREATE INDEX set_log_by_time ON set_log (performed_at);
+  `,
 ];
 
 export const SCHEMA_DB_VERSION = migrations.length;
