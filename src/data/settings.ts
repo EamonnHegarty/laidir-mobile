@@ -52,6 +52,30 @@ export function settingsRepo({ db }: { db: Db }) {
       return new Map(Object.entries(await readRestMap(db)));
     },
 
+    /** The name shown on the Profile tab (Profile's `display_name`), if set. */
+    async displayName(): Promise<string | undefined> {
+      const [row] = await db.all<{ value: string }>("SELECT value FROM settings WHERE key = ?", [
+        NAME_KEY,
+      ]);
+      return row ? (JSON.parse(row.value) as string) : undefined;
+    },
+
+    /** Sets the display name (trimmed, 1–50 characters); empty or `null` clears it. */
+    async setDisplayName(name: string | null): Promise<void> {
+      const trimmed = name?.trim() ?? "";
+      if (trimmed === "") {
+        await db.run("DELETE FROM settings WHERE key = ?", [NAME_KEY]);
+        return;
+      }
+      if ([...trimmed].length > MAX_NAME) {
+        throw new RangeError(`A name can be at most ${MAX_NAME} characters`);
+      }
+      await db.run(
+        "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+        [NAME_KEY, JSON.stringify(trimmed)],
+      );
+    },
+
     /** Remembers the rest for one exercise; `null` goes back to the template/default. */
     async setExerciseRest(ref: string, seconds: number | null): Promise<void> {
       if (seconds !== null && (!Number.isInteger(seconds) || seconds < 0 || seconds > MAX_REST)) {
@@ -79,6 +103,8 @@ export function settingsRepo({ db }: { db: Db }) {
 const REST_KEY = "exercise_rest_seconds";
 const MAX_REST = 3600;
 const MAX_EXERCISE_RESTS = 500;
+const NAME_KEY = "display_name";
+const MAX_NAME = 50;
 
 type RestMap = NonNullable<Profile["exercise_rest_seconds"]>;
 

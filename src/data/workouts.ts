@@ -36,7 +36,7 @@ export type LoggedSet = {
   exercise_id: ExerciseRef;
 } & WorkoutSet;
 
-type SetLogRow = Omit<LoggedSet, "completed" | keyof WorkoutSet> & {
+export type SetLogRow = Omit<LoggedSet, "completed" | keyof WorkoutSet> & {
   set_type: WorkoutSet["set_type"];
   completed: number;
   weight_kg: number | null;
@@ -46,7 +46,7 @@ type SetLogRow = Omit<LoggedSet, "completed" | keyof WorkoutSet> & {
   rpe: number | null;
 };
 
-const fromRow = (row: SetLogRow): LoggedSet =>
+export const fromSetLogRow = (row: SetLogRow): LoggedSet =>
   compact({
     workout_id: row.workout_id,
     performed_at: row.performed_at,
@@ -226,7 +226,7 @@ export function workoutsRepo({ db, clock, newId }: Deps) {
          ORDER BY exercise_index, set_index`,
         [exerciseId],
       );
-      return rows.map(fromRow);
+      return rows.map(fromSetLogRow);
     },
 
     /** This exercise's sets from its most recent finished workouts, newest first, grouped by workout. */
@@ -255,7 +255,7 @@ export function workoutsRepo({ db, clock, newId }: Deps) {
           };
           sessions.push(session);
         }
-        session.sets.push(fromRow(row));
+        session.sets.push(fromSetLogRow(row));
       }
       return sessions;
     },
