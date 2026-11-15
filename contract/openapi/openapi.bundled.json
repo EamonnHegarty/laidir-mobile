@@ -4,7 +4,7 @@
     "title": "Láidir API",
     "version": "0.1.0",
     "summary": "Backup and sync for the Láidir gym tracker.",
-    "description": "The contract between the Láidir app and its backend. **This file is the source of truth**:\nthe mobile app generates its typed client from `openapi.bundled.json`, and the API's own\ntypes are generated from it too.\n\nEntity schemas live in `schemas/v1/` as JSON Schema 2020-12 and are shared with the MCP server.\n\n## Conventions\n- IDs are client-generated lowercase UUIDs. Timestamps are ISO-8601 UTC with milliseconds.\n- The user is **always** the verified token's `sub`. No endpoint takes a user ID.\n- Errors are RFC 9457 `application/problem+json`.\n- Deletes are soft: set `deleted_at`. Tombstones sync like any other change.\n- Deleting a `RoutineFolder`: tombstone the folder and push each of its routines with `folder_id`\n  removed. Readers treat a `folder_id` pointing to a missing or deleted folder as unfiled.\n- Built-in exercises (`exercise_id: builtin:<slug>`) come from the static catalogue in\n  `catalogue/v1/exercises.json`, not from this API.\n\n## Sync model (phase 3)\n- **Push**: the client sends whole items. Each write is conditional on `updated_at`\n  (last writer wins). A stale write is rejected with the server's current copy.\n- **Pull**: the server stamps every accepted write with its own clock (`synced_at`, not exposed).\n  Pull pages through changes in `synced_at` order from an opaque cursor, so a device with a\n  wrong clock can't make its changes invisible to other devices.\n\nOperations marked `x-laidir-status: planned` aren't implemented yet.\n",
+    "description": "The contract between the Láidir app and its backend. **This file is the source of truth**:\nthe mobile app generates its typed client from `openapi.bundled.json`, and the API's own\ntypes are generated from it too.\n\nEntity schemas live in `schemas/v1/` as JSON Schema 2020-12 and are shared with the MCP server.\n\n## Conventions\n- IDs are client-generated lowercase UUIDs. Timestamps are ISO-8601 UTC with milliseconds.\n- The user is **always** the verified token's `sub`. No endpoint takes a user ID.\n- Errors are RFC 9457 `application/problem+json`.\n- Deletes are soft: set `deleted_at`. Tombstones sync like any other change.\n- Deleting a `RoutineFolder`: tombstone the folder and push each of its routines with `folder_id`\n  removed. Readers treat a `folder_id` pointing to a missing or deleted folder as unfiled.\n- Rest timer precedence: `Profile.exercise_rest_seconds[<exercise_id>]`, then the routine's\n  `rest_seconds`, then `Profile.default_rest_seconds`.\n- Built-in exercises (`exercise_id: builtin:<slug>`) come from the static catalogue in\n  `catalogue/v1/exercises.json`, not from this API.\n\n## Sync model (phase 3)\n- **Push**: the client sends whole items. Each write is conditional on `updated_at`\n  (last writer wins). A stale write is rejected with the server's current copy.\n- **Pull**: the server stamps every accepted write with its own clock (`synced_at`, not exposed).\n  Pull pages through changes in `synced_at` order from an opaque cursor, so a device with a\n  wrong clock can't make its changes invisible to other devices.\n\nOperations marked `x-laidir-status: planned` aren't implemented yet.\n",
     "license": {
       "name": "MIT",
       "identifier": "MIT"
@@ -276,7 +276,19 @@
             ]
           },
           "default_rest_seconds": {
+            "description": "Rest timer used when neither exercise_rest_seconds nor the routine sets one.",
             "$ref": "#/components/schemas/RestSeconds"
+          },
+          "exercise_rest_seconds": {
+            "description": "Rest timer chosen per exercise, keyed by ExerciseRef (builtin:<slug> or a custom exercise's uuid). Applies every time the user does that exercise. Precedence: exercise_rest_seconds, then the routine's rest_seconds, then default_rest_seconds. Keys for deleted custom exercises may remain; readers ignore them.",
+            "type": "object",
+            "maxProperties": 500,
+            "propertyNames": {
+              "$ref": "#/components/schemas/ExerciseRef"
+            },
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RestSeconds"
+            }
           }
         }
       },
@@ -719,6 +731,12 @@
         "minimum": 0,
         "maximum": 3600
       },
+      "ExerciseRef": {
+        "description": "Reference to an exercise: `builtin:<slug>` for the built-in catalogue, or the UUID of one of the user's custom exercises.",
+        "type": "string",
+        "pattern": "^(builtin:[a-z0-9]+(-[a-z0-9]+)*|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$",
+        "maxLength": 100
+      },
       "Name": {
         "type": "string",
         "minLength": 1,
@@ -786,12 +804,6 @@
         "type": "integer",
         "minimum": 0,
         "maximum": 1000000000
-      },
-      "ExerciseRef": {
-        "description": "Reference to an exercise: `builtin:<slug>` for the built-in catalogue, or the UUID of one of the user's custom exercises.",
-        "type": "string",
-        "pattern": "^(builtin:[a-z0-9]+(-[a-z0-9]+)*|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$",
-        "maxLength": 100
       },
       "SupersetGroup": {
         "description": "Exercises in the same workout or routine with the same group number form a superset.",

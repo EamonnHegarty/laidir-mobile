@@ -48,7 +48,15 @@
       "enum": ["km", "mi"]
     },
     "default_rest_seconds": {
+      "description": "Rest timer used when neither exercise_rest_seconds nor the routine sets one.",
       "$ref": "common.json#/$defs/RestSeconds"
+    },
+    "exercise_rest_seconds": {
+      "description": "Rest timer chosen per exercise, keyed by ExerciseRef (builtin:<slug> or a custom exercise's uuid). Applies every time the user does that exercise. Precedence: exercise_rest_seconds, then the routine's rest_seconds, then default_rest_seconds. Keys for deleted custom exercises may remain; readers ignore them.",
+      "type": "object",
+      "maxProperties": 500,
+      "propertyNames": { "$ref": "common.json#/$defs/ExerciseRef" },
+      "additionalProperties": { "$ref": "common.json#/$defs/RestSeconds" }
     }
   }
 }
