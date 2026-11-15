@@ -14,6 +14,8 @@ export default function ProgramsLayout() {
         options={{ presentation: "modal", title: "Add exercises" }}
       />
       <Stack.Screen name="routines/[id]" options={{ title: "" }} />
+      <Stack.Screen name="exercise/[ref]" options={{ title: "" }} />
+      <Stack.Screen name="exercise-history" options={{ presentation: "modal", title: "" }} />
       <Stack.Screen name="routines/edit" options={{ title: "Workout" }} />
       <Stack.Screen
         name="routines/pick-exercise"

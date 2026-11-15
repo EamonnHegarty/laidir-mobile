@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Keyboard, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { ReorderList, setCount } from "@/components/reorder-list";
-import { DashedButton, Pill } from "@/components/glas";
+import { DashedButton, IconAction, Pill } from "@/components/glas";
 import { Icon } from "@/components/icon";
 import { Field, IconButton, Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
@@ -45,6 +45,8 @@ export type SessionEditorProps = {
   exerciseRest?: ReadonlyMap<string, number>;
   onExerciseRest?: (ref: string, seconds: number | null) => void;
   onAddExercises: () => void;
+  /** Shows a history button on each exercise (the live session opens its past sessions). */
+  onShowHistory?: (ref: string) => void;
   /** Shown as a Discard button at the bottom when given (the live session). */
   onDiscard?: () => void;
   /** Live session: ticking a set vibrates and starts the rest timer. Off when editing history. */
@@ -89,6 +91,7 @@ function SessionBody({
   exerciseRest,
   onExerciseRest,
   onAddExercises,
+  onShowHistory,
   onDiscard,
   live = true,
   header,
@@ -123,7 +126,9 @@ function SessionBody({
   return (
     <ScrollView
       contentContainerStyle={styles.content}
+      // Taps on buttons keep the keyboard (kg → reps stays quick); scrolling closes it.
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       automaticallyAdjustKeyboardInsets
     >
       {header}
@@ -204,6 +209,17 @@ function SessionBody({
                   accessibilityLabel={`Rest timer for ${info.name}: ${restLabel(rest)}`}
                 />
               ) : null}
+              {onShowHistory ? (
+                <IconAction
+                  icon="history"
+                  label={`History for ${info.name}`}
+                  size={22}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    onShowHistory(exercise.exercise_id);
+                  }}
+                />
+              ) : null}
               <IconButton
                 icon="close"
                 a11y={`Remove ${info.name}`}
@@ -231,6 +247,8 @@ function SessionBody({
                   }
                   onRemove={() => onExercises((cur) => removeSet(cur, index, setIndex))}
                   onToggle={() => {
+                    // Ticking a set means you're done typing it.
+                    Keyboard.dismiss();
                     const completing = !set.completed;
                     onExercises((cur) =>
                       toggleComplete(cur, index, setIndex, hints[setIndex], info.tracking),

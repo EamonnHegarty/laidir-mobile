@@ -119,3 +119,26 @@ describe("routines", () => {
     expect((await repos.routines.get(r.id))?.deleted_at).not.toBeNull();
   });
 });
+
+describe("reorder", () => {
+  it("puts a program's workouts in the given order and only saves the ones that moved", async () => {
+    const { repos } = await setup();
+    const folder = await repos.routines.createFolder("Upper/Lower");
+    const names = ["Lower A", "Upper A", "Lower B"];
+    const created = [];
+    for (const name of names) {
+      created.push(await repos.routines.create({ name, folder_id: folder.id, exercises: [] }));
+    }
+    const [lowerA, upperA, lowerB] = created;
+    await repos.routines.reorder(folder.id, [lowerA!.id, lowerB!.id, upperA!.id]);
+
+    const grouped = await repos.routines.listGrouped();
+    expect(grouped.folders[0]!.routines.map((r) => r.name)).toEqual([
+      "Lower A",
+      "Lower B",
+      "Upper A",
+    ]);
+    expect((await repos.routines.get(lowerA!.id))!.updated_at).toBe(lowerA!.updated_at);
+    expect((await repos.routines.get(lowerB!.id))!.updated_at > lowerB!.updated_at).toBe(true);
+  });
+});

@@ -106,8 +106,8 @@ export default function RoutineScreen() {
                     info.source === "unknown"
                       ? undefined
                       : () =>
-                          router.navigate({
-                            pathname: "/exercises/[ref]",
+                          router.push({
+                            pathname: "/exercise/[ref]",
                             params: { ref: exercise.exercise_id },
                           })
                   }

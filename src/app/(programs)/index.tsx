@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } f
 
 import { Card, DashedButton, IconAction, PageHeader, Pill, PillRow } from "@/components/glas";
 import { Icon } from "@/components/icon";
+import { ReorderList } from "@/components/reorder-list";
 import { Button, EmptyState, Label, Screen } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import { describeExercise } from "@/data/catalogue";
@@ -30,6 +31,12 @@ export default function ProgramsScreen() {
   const repos = useRepositories();
   const { width } = useWindowDimensions();
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  // Long-press a workout card to drag that program's workouts into a new order.
+  const [reordering, setReordering] = useState<{
+    folderId?: string;
+    title: string;
+    routines: Routine[];
+  } | null>(null);
   const query = useLiveQuery(async (r) => {
     const [grouped, custom, lastDone, active, latest, settings] = await Promise.all([
       r.routines.listGrouped(),
@@ -83,6 +90,32 @@ export default function ProgramsScreen() {
       }
     />
   );
+  if (reordering) {
+    const move = (from: number, to: number) => {
+      const next = [...reordering.routines];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved!);
+      setReordering({ ...reordering, routines: next });
+      void repos.routines.reorder(
+        reordering.folderId,
+        next.map((r) => r.id),
+      );
+    };
+    return (
+      <Screen>
+        <PageHeader title={reordering.title} subtitle="Workout order" />
+        <ReorderList
+          items={reordering.routines.map((r) => ({
+            key: r.id,
+            name: r.name,
+            detail: `${r.exercises.length} ${r.exercises.length === 1 ? "exercise" : "exercises"}`,
+          }))}
+          onMove={move}
+          onDone={() => setReordering(null)}
+        />
+      </Screen>
+    );
+  }
   if (!query.data) return <Screen>{header}</Screen>;
   const { grouped, custom, lastDone, active, justFinished, settings } = query.data;
   const groups: Group[] = [
@@ -182,6 +215,16 @@ export default function ProgramsScreen() {
                             router.push({ pathname: "/routines/[id]", params: { id: routine.id } })
                           }
                           onStart={() => start(routine)}
+                          onReorder={
+                            group.routines.length > 1
+                              ? () =>
+                                  setReordering({
+                                    folderId: group.folder?.id,
+                                    title: group.title,
+                                    routines: group.routines,
+                                  })
+                              : undefined
+                          }
                         />
                       ))}
                     </View>
@@ -254,6 +297,7 @@ function WorkoutCard({
   width,
   onPress,
   onStart,
+  onReorder,
 }: {
   routine: Routine;
   custom: ReadonlyMap<string, Exercise>;
@@ -262,11 +306,18 @@ function WorkoutCard({
   width: number;
   onPress: () => void;
   onStart: () => void;
+  onReorder?: () => void;
 }) {
   const theme = useTheme();
   const count = routine.exercises.length;
   return (
-    <Card onPress={onPress} style={[styles.card, { width }]}>
+    <Card
+      onPress={onPress}
+      onLongPress={onReorder}
+      accessibilityLabel={routine.name}
+      accessibilityHint={onReorder ? "Long-press to change the order of workouts" : undefined}
+      style={[styles.card, { width }]}
+    >
       <View style={styles.cardTop}>
         <Label size="heading" numberOfLines={2} style={styles.flex}>
           {routine.name}
