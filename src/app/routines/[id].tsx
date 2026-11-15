@@ -14,6 +14,7 @@ import { Spacing } from "@/constants/theme";
 import { describeExercise } from "@/data/catalogue";
 import { useLiveQuery, useRepositories } from "@/data/database-provider";
 import { setSummary } from "@/features/routines/draft";
+import { startSession } from "@/features/workout/start";
 import { formatDuration } from "@/lib/units";
 
 export default function RoutineScreen() {
@@ -114,6 +115,11 @@ export default function RoutineScreen() {
         )}
 
         <View style={styles.actions}>
+          <Button
+            title="Start workout"
+            disabled={routine.exercises.length === 0}
+            onPress={() => startSession(repos, () => router.navigate("/active"), routine)}
+          />
           <Button title="Delete workout" tone="danger" onPress={confirmDelete} />
         </View>
       </ScrollView>

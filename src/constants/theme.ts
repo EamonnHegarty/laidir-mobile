@@ -7,6 +7,8 @@ export const Colors = {
     tint: "#1F7AE0",
     onTint: "#FFFFFF",
     danger: "#D93025",
+    success: "#1E8E3E",
+    doneRow: "#E6F4EA",
   },
   dark: {
     text: "#ECEDEE",
@@ -16,6 +18,8 @@ export const Colors = {
     tint: "#4FA3F7",
     onTint: "#000000",
     danger: "#FF6B5E",
+    success: "#34A853",
+    doneRow: "#0F2A17",
   },
 } as const;
 
