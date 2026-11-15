@@ -20,8 +20,8 @@
     "expo:doctor": "expo-doctor",
     "bundle:android": "expo export --platform android --output-dir dist",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm expo:doctor",
-    "build:dev": "eas build --platform android --profile development",
-    "build:preview": "eas build --platform android --profile preview",
+    "build:dev": "npx eas-cli@27.10.0 build --platform android --profile development",
+    "build:preview": "npx eas-cli@27.10.0 build --platform android --profile preview",
     "contract:sync": "node scripts/contract-sync.mjs"
   },
   "dependencies": {

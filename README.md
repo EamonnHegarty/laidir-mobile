@@ -59,8 +59,8 @@ Two app variants, chosen by `APP_VARIANT` in [`eas.json`](eas.json) and [`app.co
 | `preview`     | Láidir       | `ie.eamonnhegarty.laidir`     | Standalone APK for daily use, fully offline                                                  |
 
 ```bash
-pnpm build:dev       # eas build --platform android --profile development
-pnpm build:preview   # eas build --platform android --profile preview
+pnpm build:dev       # npx eas-cli@27.10.0 build --platform android --profile development
+pnpm build:preview   # npx eas-cli@27.10.0 build --platform android --profile preview
 ```
 
 Open the build link on the phone, download the APK and allow installs from that source. On Samsung, **Auto Blocker**
