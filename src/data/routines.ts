@@ -173,6 +173,39 @@ export function routinesRepo({ db, clock, newId }: Deps) {
       });
     },
 
+    /**
+     * Puts a program's workouts (or the unfiled ones, `folderId` undefined) in the given order.
+     * Rewrites sort_order with fresh gaps; only workouts whose position changed are saved (and
+     * synced). Ids not in that group are ignored; workouts left out keep their place after these.
+     */
+    async reorder(folderId: string | undefined, orderedIds: readonly string[]): Promise<void> {
+      await db.transaction(async (tx) => {
+        const routines = parseDocs<Routine>(
+          await tx.all(
+            folderId === undefined
+              ? `SELECT doc FROM routines WHERE deleted_at IS NULL AND folder_id IS NULL ${ORDER}`
+              : `SELECT doc FROM routines WHERE deleted_at IS NULL AND folder_id = ? ${ORDER}`,
+            folderId === undefined ? [] : [folderId],
+          ),
+        );
+        const byId = new Map(routines.map((r) => [r.id, r]));
+        const listed = orderedIds.filter((id) => byId.has(id));
+        const rest = routines.filter((r) => !listed.includes(r.id)).map((r) => r.id);
+        let sortOrder = SORT_GAP;
+        for (const id of [...listed, ...rest]) {
+          const routine = byId.get(id)!;
+          if (routine.sort_order !== sortOrder) {
+            await writeEntity(tx, {
+              ...routine,
+              sort_order: sortOrder,
+              updated_at: nextUpdatedAt(clock, routine.updated_at),
+            });
+          }
+          sortOrder += SORT_GAP;
+        }
+      });
+    },
+
     /** Replaces the editable fields. Moving to another folder puts the routine at the end of it. */
     async update(id: string, input: RoutineInput): Promise<Routine> {
       return db.transaction(async (tx) => {

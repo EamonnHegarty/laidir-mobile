@@ -85,7 +85,9 @@ export default function ProfileScreen() {
                 (ref) => setChosen(ref),
               )
             }
-            onOpenExercise={(ref) => router.push({ pathname: "/exercises/[ref]", params: { ref } })}
+            onOpenExercise={(ref) =>
+              router.push({ pathname: "/profile/exercise/[ref]", params: { ref } })
+            }
           />
         </ScrollView>
       ) : null}

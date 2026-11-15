@@ -229,6 +229,7 @@ function ActiveSession({ initial }: { initial: Loaded }) {
         exerciseRest={exerciseRest}
         onExerciseRest={chooseRest}
         onAddExercises={addFromPicker}
+        onShowHistory={(ref) => router.push({ pathname: "/exercise-history", params: { ref } })}
         onDiscard={discard}
       />
       <RestBar />

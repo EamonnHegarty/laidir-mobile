@@ -9,6 +9,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="index" options={{ headerShown: false, title: "Profile" }} />
       <Stack.Screen name="settings" options={{ title: "Settings" }} />
       <Stack.Screen name="rest" options={{ title: "Per-exercise rest" }} />
+      <Stack.Screen name="exercise/[ref]" options={{ title: "" }} />
       <Stack.Screen
         name="pick-exercise"
         options={{ presentation: "modal", title: "Choose an exercise" }}
