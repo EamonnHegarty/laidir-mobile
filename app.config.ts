@@ -46,7 +46,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     typedRoutes: true,
     reactCompiler: true,
   },
+  // EAS project @eamonnhegarty/laidir-mobile (not a secret). Both variants build under it.
+  owner: "eamonnhegarty",
   extra: {
     variant: VARIANT,
+    eas: {
+      projectId: "da82ec53-fc13-49cf-97a9-9864e7969fed",
+    },
   },
 });
