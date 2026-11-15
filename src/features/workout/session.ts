@@ -43,15 +43,16 @@ export function removeExercise(exercises: readonly WorkoutExercise[], index: num
   return exercises.filter((_, i) => i !== index);
 }
 
+/** Moves one exercise to a new position (drag and drop); the others keep their order. */
 export function moveExercise(
   exercises: readonly WorkoutExercise[],
-  index: number,
-  by: -1 | 1,
+  from: number,
+  to: number,
 ): WorkoutExercise[] {
-  const target = index + by;
-  if (target < 0 || target >= exercises.length) return [...exercises];
   const next = [...exercises];
-  [next[index], next[target]] = [next[target]!, next[index]!];
+  if (from < 0 || from >= next.length || to < 0 || to >= next.length) return next;
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved!);
   return next;
 }
 

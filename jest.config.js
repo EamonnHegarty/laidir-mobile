@@ -18,6 +18,7 @@ module.exports = {
     {
       displayName: "app",
       preset: "jest-expo",
+      setupFiles: [...expoPreset.setupFiles, "<rootDir>/test/setup-app.js"],
       testPathIgnorePatterns: [...IGNORE, "/src/data/", "/src/__tests__/contract\\.test\\.ts$"],
     },
     {

@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { CommitField } from "@/components/commit-field";
+import { ReorderList, setCount } from "@/components/reorder-list";
 import { Button, Chip, ChipGrid, Field, IconButton, Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import { describeExercise } from "@/data/catalogue";
@@ -57,6 +59,22 @@ export function RoutineEditor({
   onAddExercises,
   problem,
 }: Props) {
+  const [reordering, setReordering] = useState(false);
+  if (reordering) {
+    return (
+      <ReorderList
+        items={draft.exercises.map((exercise, index) => ({
+          key: `${exercise.exercise_id}-${index}`,
+          name: describeExercise(exercise.exercise_id, customExercises.get(exercise.exercise_id))
+            .name,
+          detail: setCount(exercise.sets.length),
+        }))}
+        onMove={(from, to) => onChange(moveExercise(draft, from, to))}
+        onDone={() => setReordering(false)}
+      />
+    );
+  }
+
   return (
     <ScrollView
       contentContainerStyle={styles.content}
@@ -70,6 +88,15 @@ export function RoutineEditor({
         accessibilityLabel="Workout name"
         maxLength={100}
         style={styles.name}
+      />
+      <Field
+        value={draft.notes}
+        onChangeText={(notes) => onChange({ ...draft, notes })}
+        placeholder="Notes (optional)"
+        accessibilityLabel="Workout notes"
+        multiline
+        maxLength={2000}
+        style={styles.notes}
       />
 
       {folders.length > 0 ? (
@@ -108,9 +135,7 @@ export function RoutineEditor({
             sets={exercise.sets}
             restSeconds={exercise.rest_seconds}
             units={units}
-            first={index === 0}
-            last={index === draft.exercises.length - 1}
-            onMove={(by) => onChange(moveExercise(draft, index, by))}
+            onReorder={draft.exercises.length > 1 ? () => setReordering(true) : undefined}
             onRemove={() => onChange(removeExercise(draft, index))}
             onRest={(rest_seconds) => onChange(updateExercise(draft, index, { rest_seconds }))}
             onAddSet={() => onChange(addSet(draft, index))}
@@ -123,16 +148,6 @@ export function RoutineEditor({
       {draft.exercises.length < MAX_EXERCISES ? (
         <Button title="Add exercises" onPress={onAddExercises} />
       ) : null}
-
-      <Field
-        value={draft.notes}
-        onChangeText={(notes) => onChange({ ...draft, notes })}
-        placeholder="Notes (optional)"
-        accessibilityLabel="Workout notes"
-        multiline
-        maxLength={2000}
-        style={styles.notes}
-      />
 
       {problem ? (
         <Label tone="danger" accessibilityLiveRegion="polite">
@@ -149,9 +164,7 @@ function ExerciseCard({
   sets,
   restSeconds,
   units,
-  first,
-  last,
-  onMove,
+  onReorder,
   onRemove,
   onRest,
   onAddSet,
@@ -163,9 +176,8 @@ function ExerciseCard({
   sets: RoutineSet[];
   restSeconds?: number;
   units: Props["units"];
-  first: boolean;
-  last: boolean;
-  onMove: (by: -1 | 1) => void;
+  /** Long-pressing the name opens the drag-to-reorder list. */
+  onReorder?: () => void;
   onRemove: () => void;
   onRest: (seconds: number | undefined) => void;
   onAddSet: () => void;
@@ -176,21 +188,15 @@ function ExerciseCard({
   return (
     <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
       <View style={styles.cardHeader}>
-        <Label size="heading" style={styles.flex}>
-          {name}
-        </Label>
-        <IconButton
-          label="↑"
-          a11y={`Move ${name} up`}
-          onPress={() => onMove(-1)}
-          disabled={first}
-        />
-        <IconButton
-          label="↓"
-          a11y={`Move ${name} down`}
-          onPress={() => onMove(1)}
-          disabled={last}
-        />
+        <Pressable
+          style={styles.flex}
+          onLongPress={onReorder}
+          accessibilityHint={onReorder ? "Long-press to reorder exercises" : undefined}
+        >
+          <Label size="heading" style={{ color: theme.tint }}>
+            {name}
+          </Label>
+        </Pressable>
         <IconButton label="✕" a11y={`Remove ${name}`} onPress={onRemove} />
       </View>
 

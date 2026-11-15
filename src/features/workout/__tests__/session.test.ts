@@ -71,6 +71,15 @@ describe("session from a workout template", () => {
     expect(templateFor(routine, moved[1]!, 1)?.rest_seconds).toBe(180);
     expect(templateFor(null, session[0]!, 0)).toBeUndefined();
   });
+
+  it("moves a dragged exercise to its drop position, keeping the rest in order", () => {
+    const ex = (id: string) => ({ exercise_id: `builtin:${id}`, sets: [] });
+    const names = (list: { exercise_id: string }[]) => list.map((e) => e.exercise_id.slice(8));
+    const list = [ex("a"), ex("b"), ex("c"), ex("d")];
+    expect(names(moveExercise(list, 3, 0))).toEqual(["d", "a", "b", "c"]);
+    expect(names(moveExercise(list, 0, 2))).toEqual(["b", "c", "a", "d"]);
+    expect(names(moveExercise(list, 0, 9))).toEqual(["a", "b", "c", "d"]);
+  });
 });
 
 describe("hints and ticking", () => {
