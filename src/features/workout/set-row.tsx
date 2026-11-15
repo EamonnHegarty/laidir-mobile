@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
 
 import { LiveField } from "@/components/live-field";
-import { IconButton, Label } from "@/components/ui";
+import { Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import type { SetType, Tracking, WorkoutSet } from "@/data/contract";
 import type { Settings } from "@/data/settings";
@@ -147,6 +147,17 @@ export function LogSetRow({
     <View style={[styles.row, set.completed && { backgroundColor: theme.doneRow }]}>
       <Pressable
         onPress={() => onChange({ set_type: nextType })}
+        onLongPress={() =>
+          Alert.alert(`Remove set ${label}?`, undefined, [
+            { text: "Cancel", style: "cancel" },
+            { text: "Remove", style: "destructive", onPress: onRemove },
+          ])
+        }
+        accessibilityHint="Tap to change the set type. Long-press to remove the set."
+        accessibilityActions={[{ name: "remove", label: "Remove set" }]}
+        onAccessibilityAction={(e) => {
+          if (e.nativeEvent.actionName === "remove") onRemove();
+        }}
         accessibilityRole="button"
         accessibilityLabel={`${SET_TYPE_LABELS[set.set_type]} set ${label}. Change to ${SET_TYPE_LABELS[nextType]}`}
         style={styles.badge}
@@ -171,7 +182,37 @@ export function LogSetRow({
           ✓
         </Label>
       </Pressable>
-      <IconButton label="−" a11y={a11y("Remove")} onPress={onRemove} />
+    </View>
+  );
+}
+
+/** Column headings matching LogSetRow's layout: Set · Last time · the tracked fields · tick. */
+export function LogSetHeader({ tracking, units }: { tracking: Tracking; units: Units }) {
+  const titles = fieldsFor(tracking).map((key) =>
+    key === "weight_kg"
+      ? units.weight_unit
+      : key === "reps"
+        ? "reps"
+        : key === "duration_s"
+          ? "time"
+          : units.distance_unit === "km"
+            ? "m"
+            : "mi",
+  );
+  return (
+    <View style={styles.row} importantForAccessibility="no-hide-descendants">
+      <Label tone="secondary" size="small" style={[styles.badge, styles.center]}>
+        Set
+      </Label>
+      <Label tone="secondary" size="small" style={styles.previous}>
+        Last time
+      </Label>
+      {titles.map((title, i) => (
+        <Label key={i} tone="secondary" size="small" style={[styles.field, styles.center]}>
+          {title}
+        </Label>
+      ))}
+      <View style={styles.tickSpace} />
     </View>
   );
 }
@@ -180,14 +221,18 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.two,
+    gap: Spacing.one + 2,
     paddingVertical: 4,
     paddingHorizontal: 4,
     borderRadius: 8,
   },
-  badge: { width: 32, alignItems: "center" },
-  previous: { width: 72 },
-  field: { flex: 1, paddingVertical: 8, textAlign: "center" },
+  badge: { width: 28, alignItems: "center" },
+  center: { textAlign: "center" },
+  // Last time and the inputs share the width left after the badge and tick, so weight and reps
+  // stay readable on narrow phones.
+  previous: { flex: 1.3, minWidth: 0 },
+  field: { flex: 1, minWidth: 0, paddingVertical: 8, paddingHorizontal: 4, textAlign: "center" },
+  tickSpace: { width: 44 },
   tick: {
     width: 44,
     height: 40,
