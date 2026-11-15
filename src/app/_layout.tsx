@@ -17,7 +17,7 @@ export default function RootLayout() {
           indicatorColor={colors.backgroundElement}
           labelStyle={{ selected: { color: colors.text } }}
         >
-          <NativeTabs.Trigger name="index">
+          <NativeTabs.Trigger name="(workout)">
             <NativeTabs.Trigger.Label>Workout</NativeTabs.Trigger.Label>
             <NativeTabs.Trigger.Icon md="fitness_center" />
           </NativeTabs.Trigger>
