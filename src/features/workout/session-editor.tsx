@@ -37,7 +37,10 @@ export type SessionEditorProps = {
   previous: ReadonlyMap<string, LoggedSet[]>;
   settings: Settings;
   onAddExercises: () => void;
-  onDiscard: () => void;
+  /** Shown as a Discard button at the bottom when given (the live session). */
+  onDiscard?: () => void;
+  /** Live session: ticking a set vibrates and starts the rest timer. Off when editing history. */
+  live?: boolean;
   header?: React.ReactNode;
 };
 
@@ -53,6 +56,7 @@ export function SessionEditor({
   settings,
   onAddExercises,
   onDiscard,
+  live = true,
   header,
 }: SessionEditorProps) {
   const theme = useTheme();
@@ -135,7 +139,7 @@ export function SessionEditor({
                     onExercises((cur) =>
                       toggleComplete(cur, index, setIndex, hints[setIndex], info.tracking),
                     );
-                    if (completing) {
+                    if (completing && live) {
                       tapConfirm();
                       restTimer.start(rest);
                     }
@@ -158,7 +162,7 @@ export function SessionEditor({
         <Button title="Add exercises" onPress={onAddExercises} />
       ) : null}
 
-      <Button title="Discard workout" tone="danger" onPress={onDiscard} />
+      {onDiscard ? <Button title="Discard workout" tone="danger" onPress={onDiscard} /> : null}
     </ScrollView>
   );
 }
