@@ -140,6 +140,43 @@ export function Field({ style, ...props }: TextInputProps) {
   );
 }
 
+/**
+ * A text field with an ✕ at the end that clears it (Android has no built-in clear button). The ✕
+ * only shows while there's text.
+ */
+export function ClearableField({
+  value,
+  onChangeText,
+  style,
+  clearLabel = "Clear text",
+  ...props
+}: TextInputProps & { value: string; onChangeText: (text: string) => void; clearLabel?: string }) {
+  const theme = useTheme();
+  return (
+    <View style={styles.clearable}>
+      <Field
+        value={value}
+        onChangeText={onChangeText}
+        style={[value ? styles.clearablePadding : null, style]}
+        {...props}
+      />
+      {value ? (
+        <Pressable
+          onPress={() => onChangeText("")}
+          accessibilityRole="button"
+          accessibilityLabel={clearLabel}
+          hitSlop={8}
+          style={styles.clearButton}
+        >
+          <View style={[styles.clearCircle, { backgroundColor: theme.textSecondary }]}>
+            <Text style={[styles.clearIcon, { color: theme.backgroundElement }]}>✕</Text>
+          </View>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 export function Button({
   title,
   tone = "tint",
@@ -260,6 +297,25 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
   },
+  clearable: { justifyContent: "center" },
+  clearablePadding: { paddingRight: 44 },
+  clearButton: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clearCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clearIcon: { fontSize: 11, lineHeight: 13, fontWeight: 700 },
   button: { paddingVertical: 12, paddingHorizontal: Spacing.three, borderRadius: 10 },
   buttonText: { fontSize: 16, fontWeight: 600, textAlign: "center" },
   headerButton: { fontSize: 16, fontWeight: 600 },
