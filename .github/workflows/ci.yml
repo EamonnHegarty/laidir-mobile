@@ -50,6 +50,12 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # Proves Metro can resolve and bundle the app (catches pnpm/Metro resolution issues without a
+      # native build). Runs before typecheck because it also generates Expo Router's typed-route
+      # declarations (.expo/types), so links to routes that don't exist fail the typecheck.
+      - name: Bundle Android JS
+        run: pnpm bundle:android
+
       - name: Typecheck
         run: pnpm typecheck
 
@@ -59,8 +65,3 @@ jobs:
       # Checks dependency versions match the Expo SDK and the app config is valid.
       - name: Expo doctor
         run: pnpm expo:doctor
-
-      # Proves Metro can resolve and bundle the app (catches pnpm/Metro resolution issues
-      # without a native build).
-      - name: Bundle Android JS
-        run: pnpm bundle:android
