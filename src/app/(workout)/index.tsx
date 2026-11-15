@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { Button, Label, Row, Screen, SectionHeader } from "@/components/ui";
@@ -12,25 +12,24 @@ import { formatDuration, formatWeight } from "@/lib/units";
 
 /** Workout tab: resume the session in progress, or start one (empty or from a program). */
 export default function WorkoutHome() {
-  const { finished } = useLocalSearchParams<{ finished?: string }>();
   const router = useRouter();
   const repos = useRepositories();
   const theme = useTheme();
-  const query = useLiveQuery(
-    async (r) => {
-      const [active, grouped, settings, done] = await Promise.all([
-        r.workouts.getActive(),
-        r.routines.listGrouped(),
-        r.settings.get(),
-        finished ? r.workouts.get(finished) : null,
-      ]);
-      return { active, grouped, settings, done };
-    },
-    [finished],
-  );
+  const query = useLiveQuery(async (r) => {
+    const [active, grouped, settings, history] = await Promise.all([
+      r.workouts.getActive(),
+      r.routines.listGrouped(),
+      r.settings.get(),
+      r.workouts.listHistory({ limit: 1 }),
+    ]);
+    const done = history[0] ?? null;
+    // "Just finished" for a quarter of an hour, then it reads as the last workout.
+    const justFinished = !!done?.ended_at && Date.now() - Date.parse(done.ended_at) < 15 * 60_000;
+    return { active, grouped, settings, done, justFinished };
+  }, []);
 
   if (!query.data) return <Screen />;
-  const { active, grouped, settings, done } = query.data;
+  const { active, grouped, settings, done, justFinished } = query.data;
   const openActive = () => router.navigate("/active");
   const programs = grouped.folders.filter((g) => g.routines.length > 0);
   const hasTemplates = programs.length > 0 || grouped.unfiled.length > 0;
@@ -38,7 +37,9 @@ export default function WorkoutHome() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
-        {done && done.ended_at && !active ? <FinishedCard workout={done} units={settings} /> : null}
+        {done && !active ? (
+          <FinishedCard workout={done} units={settings} justFinished={justFinished} />
+        ) : null}
 
         {active ? (
           <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
@@ -101,7 +102,9 @@ export default function WorkoutHome() {
 function FinishedCard({
   workout,
   units,
+  justFinished,
 }: {
+  justFinished: boolean;
   workout: NonNullable<Awaited<ReturnType<ReturnType<typeof useRepositories>["workouts"]["get"]>>>;
   units: { weight_unit: "kg" | "lb" };
 }) {
@@ -110,10 +113,13 @@ function FinishedCard({
   const seconds = (Date.parse(workout.ended_at!) - Date.parse(workout.started_at)) / 1000;
   return (
     <View
-      style={[styles.card, { backgroundColor: theme.doneRow }]}
+      style={[
+        styles.card,
+        { backgroundColor: justFinished ? theme.doneRow : theme.backgroundElement },
+      ]}
       accessibilityLiveRegion="polite"
     >
-      <Label size="heading">Workout saved 💪</Label>
+      <Label size="heading">{justFinished ? "Workout saved 💪" : "Last workout"}</Label>
       <Label>{workout.name}</Label>
       <Label tone="secondary">
         {formatDuration(seconds)} · {summary.completedSets} sets ·{" "}
