@@ -1,0 +1,6 @@
+# Dependency build scripts are denied unless reviewed and listed here (strictDepBuilds fails CI otherwise).
+allowBuilds:
+  # @parcel/watcher ships prebuilt binaries as platform-specific optional dependencies
+  # (@parcel/watcher-win32-x64, -linux-x64-glibc, ...); its install script only builds from
+  # source as a fallback, so it isn't needed.
+  "@parcel/watcher": false
