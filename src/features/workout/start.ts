@@ -3,6 +3,7 @@ import { Alert } from "react-native";
 import type { Routine } from "@/data/contract";
 import type { Repositories } from "@/data/index";
 
+import { prepareRestAlerts } from "./rest-alert";
 import { restTimer } from "./rest-timer";
 import { defaultSessionName, sessionFromRoutine } from "./session";
 
@@ -17,6 +18,7 @@ export async function startSession(
 ): Promise<void> {
   const begin = async () => {
     restTimer.stop();
+    void prepareRestAlerts();
     await repos.workouts.start(
       routine
         ? { name: routine.name, routine_id: routine.id, exercises: sessionFromRoutine(routine) }

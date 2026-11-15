@@ -23,12 +23,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   platforms: ["android"],
   android: {
     package: IS_DEV ? "ie.eamonnhegarty.laidir.dev" : "ie.eamonnhegarty.laidir",
+    // Icons come from scripts/make-icons.mjs (pnpm icons); colours match Brand in src/constants/theme.ts.
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
+      backgroundColor: "#0E1A14",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
+    // The rest-timer alert is an alarm-clock notification so Android delivers it on time instead of
+    // deferring it for battery saving. USE_EXACT_ALARM is granted without a prompt (sideloaded app).
+    permissions: ["android.permission.USE_EXACT_ALARM"],
     predictiveBackGestureEnabled: false,
   },
   plugins: [
@@ -36,9 +40,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-splash-screen",
       {
-        backgroundColor: "#208AEF",
+        backgroundColor: "#0B0F0D",
         image: "./assets/images/splash-icon.png",
-        imageWidth: 76,
+        imageWidth: 120,
+      },
+    ],
+    [
+      "expo-notifications",
+      {
+        icon: "./assets/images/notification-icon.png",
+        color: "#3DDC84",
+        // Local notifications only (rest timer); no push until sync exists.
+        enableRemoteNotifications: false,
       },
     ],
   ],

@@ -22,7 +22,8 @@
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm expo:doctor",
     "build:dev": "npx eas-cli@27.10.0 build --platform android --profile development",
     "build:preview": "npx eas-cli@27.10.0 build --platform android --profile preview",
-    "contract:sync": "node scripts/contract-sync.mjs"
+    "contract:sync": "node scripts/contract-sync.mjs",
+    "icons": "node scripts/make-icons.mjs"
   },
   "dependencies": {
     "expo": "~58.0.25",
@@ -31,7 +32,9 @@
     "expo-dev-client": "~58.0.20",
     "expo-font": "~58.0.12",
     "expo-haptics": "~58.0.8",
+    "expo-keep-awake": "~58.0.4",
     "expo-linking": "~58.0.17",
+    "expo-notifications": "~58.1.9",
     "expo-router": "~58.0.31",
     "expo-splash-screen": "~58.0.14",
     "expo-sqlite": "~58.0.17",
@@ -48,6 +51,7 @@
     "react-native-worklets": "0.13.0"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "2.6.2",
     "@testing-library/react-native": "^14.1.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.19.2",
