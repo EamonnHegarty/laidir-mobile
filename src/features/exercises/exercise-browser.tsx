@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 
-import { Chip, ChipRow, ClearableField, EmptyState, Label, Row } from "@/components/ui";
+import { Pill } from "@/components/glas";
+import { Icon } from "@/components/icon";
+import { Chip, ChipRow, ClearableField, EmptyState, Row } from "@/components/ui";
+import { useTheme } from "@/hooks/use-theme";
 import { Spacing } from "@/constants/theme";
 import type { MuscleGroup } from "@/data/contract";
 import { EQUIPMENT_LABELS, MUSCLE_LABELS } from "@/lib/labels";
@@ -35,6 +38,7 @@ export function ExerciseBrowser({
   /** Refs to tick, when picking several. */
   selected?: ReadonlySet<string>;
 }) {
+  const theme = useTheme();
   const [search, setSearch] = useState("");
   const [muscle, setMuscle] = useState<MuscleGroup | undefined>();
   const visible = useMemo(
@@ -52,6 +56,7 @@ export function ExerciseBrowser({
         <View>
           <View style={styles.search}>
             <ClearableField
+              icon="search"
               value={search}
               onChangeText={setSearch}
               placeholder="Search exercises"
@@ -87,15 +92,9 @@ export function ExerciseBrowser({
           accessibilityLabel={selected?.has(item.ref) ? `${item.name}, selected` : undefined}
           right={
             <>
-              {item.custom ? (
-                <Label tone="tint" size="small">
-                  Custom
-                </Label>
-              ) : null}
+              {item.custom ? <Pill label="Custom" tone="accent" /> : null}
               {selected?.has(item.ref) ? (
-                <Label tone="tint" size="heading">
-                  ✓
-                </Label>
+                <Icon name="check_circle" size={24} color={theme.tint} />
               ) : null}
             </>
           }

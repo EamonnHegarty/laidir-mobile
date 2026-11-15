@@ -1,6 +1,7 @@
-import type { RoutineExercise, RoutineSet, Workout } from "@/data/contract";
+import type { RoutineExercise, RoutineSet, Workout, WorkoutSet } from "@/data/contract";
 import type { RoutineInput } from "@/data/routines";
 import { summarise } from "@/features/workout/session";
+import { estimatedOneRepMax } from "@/lib/units";
 
 export type SessionStats = {
   durationSeconds?: number;
@@ -62,4 +63,34 @@ export function templateFromSession(workout: Workout): RoutineInput {
     }))
     .filter((exercise) => exercise.sets.length > 0);
   return { name: workout.name, exercises };
+}
+
+/**
+ * The best completed working set of each exercise in a session (heaviest estimated 1RM, then
+ * weight, reps, distance, time), in workout order. Exercises with nothing done are left out.
+ */
+export function bestSets(workout: Workout): { exercise_id: string; set: WorkoutSet }[] {
+  const score = (set: WorkoutSet): number[] => [
+    set.weight_kg !== undefined && set.reps !== undefined
+      ? (estimatedOneRepMax(set.weight_kg, set.reps) ?? 0)
+      : 0,
+    set.weight_kg ?? 0,
+    set.reps ?? 0,
+    set.distance_m ?? 0,
+    set.duration_s ?? 0,
+  ];
+  const better = (a: number[], b: number[]) => {
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i]! > b[i]!;
+    return false;
+  };
+  const result: { exercise_id: string; set: WorkoutSet }[] = [];
+  for (const exercise of workout.exercises) {
+    let best: WorkoutSet | undefined;
+    for (const set of exercise.sets) {
+      if (!set.completed || set.set_type === "warmup") continue;
+      if (!best || better(score(set), score(best))) best = set;
+    }
+    if (best) result.push({ exercise_id: exercise.exercise_id, set: best });
+  }
+  return result;
 }

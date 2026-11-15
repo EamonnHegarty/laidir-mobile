@@ -1,14 +1,18 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
 
-import { EmptyState, HeaderButton, Label, Row, Screen, SectionHeader } from "@/components/ui";
+import { LineChart } from "@/components/charts";
+import { Card, CardHeader, Pill, PillRow, StatTile, StatTiles } from "@/components/glas";
+import { EmptyState, HeaderButton, Label, Screen, SectionHeader } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import { describeExercise, isBuiltinRef } from "@/data/catalogue";
 import { useLiveQuery } from "@/data/database-provider";
 import { exerciseRecords } from "@/features/exercises/records";
+import { e1rmSeries, type PrKind } from "@/features/stats/model";
+import { useStats } from "@/features/stats/use-stats";
 import { formatSet } from "@/lib/format-set";
 import { EQUIPMENT_LABELS, MUSCLE_LABELS, SET_TYPE_LABELS, TRACKING_LABELS } from "@/lib/labels";
-import { formatWeight } from "@/lib/units";
+import { displayNumber, formatWeight, kgToUnit } from "@/lib/units";
 
 const dateFormat = new Intl.DateTimeFormat(undefined, {
   weekday: "short",
@@ -16,6 +20,9 @@ const dateFormat = new Intl.DateTimeFormat(undefined, {
   month: "short",
   year: "numeric",
 });
+const shortDate = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" });
+
+const PR_LABELS: Record<PrKind, string> = { e1rm: "e1RM", weight: "Heaviest", reps: "Reps" };
 
 export default function ExerciseDetailScreen() {
   const { ref } = useLocalSearchParams<{ ref: string }>();
@@ -31,16 +38,51 @@ export default function ExerciseDetailScreen() {
     },
     [ref],
   );
+  const stats = useStats();
 
   if (!query.data) return <Screen />;
   const { custom, history, settings } = query.data;
   const info = describeExercise(ref, custom);
   const records = exerciseRecords(history, info.tracking);
   const editable = info.source === "custom" && !info.retired;
+  const unit = settings.weight_unit;
+
+  // PRs per workout for this exercise, and the e1RM trend (all time).
+  const prsByWorkout = new Map<string, PrKind[]>();
+  for (const pr of stats.data?.prs ?? []) {
+    if (pr.exercise_id !== ref) continue;
+    prsByWorkout.set(pr.workout_id, [...(prsByWorkout.get(pr.workout_id) ?? []), pr.kind]);
+  }
+  const points = stats.data ? e1rmSeries(stats.data.sets, ref) : [];
+  const e1rmPrs = new Set(
+    (stats.data?.prs ?? [])
+      .filter((p) => p.exercise_id === ref && p.kind === "e1rm")
+      .map((p) => p.workout_id),
+  );
+
   const muscles = [
     info.primary_muscle ? MUSCLE_LABELS[info.primary_muscle] : undefined,
     ...(custom?.secondary_muscles ?? []).map((m) => MUSCLE_LABELS[m]),
-  ].filter(Boolean);
+  ].filter((m) => m !== undefined) as string[];
+
+  const tiles: { label: string; value: string; accent?: boolean }[] = [];
+  if (records.bestOneRepMax) {
+    tiles.push({
+      label: "Best e1RM",
+      value: displayNumber(Math.round(kgToUnit(records.bestOneRepMax.kg, unit) * 10) / 10),
+      accent: true,
+    });
+  }
+  if (records.heaviest?.weight_kg !== undefined) {
+    tiles.push({
+      label: "Heaviest",
+      value: `${displayNumber(kgToUnit(records.heaviest.weight_kg, unit))}×${records.heaviest.reps ?? 0}`,
+    });
+  }
+  if (records.mostReps && info.tracking === "reps_only") {
+    tiles.push({ label: "Most reps", value: String(records.mostReps.reps), accent: true });
+  }
+  tiles.push({ label: "Sessions", value: String(records.sessions) });
 
   return (
     <Screen>
@@ -58,39 +100,43 @@ export default function ExerciseDetailScreen() {
         }}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.summary}>
-          <Label tone="secondary">
-            {[
-              info.equipment ? EQUIPMENT_LABELS[info.equipment] : undefined,
-              muscles.join(", "),
-              TRACKING_LABELS[info.tracking],
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </Label>
+        <PillRow>
+          {muscles.map((m, i) => (
+            <Pill key={m} label={m} tone={i === 0 ? "accent" : "neutral"} />
+          ))}
+          {info.equipment ? <Pill label={EQUIPMENT_LABELS[info.equipment]} /> : null}
+          <Pill label={TRACKING_LABELS[info.tracking]} />
           {info.source === "custom" ? (
-            <Label tone="secondary" size="small">
-              {info.retired ? "Deleted custom exercise" : "Custom exercise"}
-            </Label>
+            <Pill label={info.retired ? "Deleted custom exercise" : "Custom"} />
           ) : null}
-          {custom?.notes ? <Label>{custom.notes}</Label> : null}
-        </View>
+        </PillRow>
+        {custom?.notes ? <Label>{custom.notes}</Label> : null}
 
-        {records.heaviest || records.mostReps ? <SectionHeader>Records</SectionHeader> : null}
-        {records.heaviest ? (
-          <Row
-            title="Heaviest weight"
-            right={<Label>{formatSet(records.heaviest, info.tracking, settings)}</Label>}
-          />
+        {history.length > 0 ? (
+          <StatTiles>
+            {tiles.map((t) => (
+              <StatTile key={t.label} label={t.label} value={t.value} accent={t.accent} />
+            ))}
+          </StatTiles>
         ) : null}
-        {records.bestOneRepMax ? (
-          <Row
-            title="Best estimated 1RM"
-            right={<Label>{formatWeight(records.bestOneRepMax.kg, settings.weight_unit)}</Label>}
-          />
-        ) : null}
-        {records.mostReps && info.tracking === "reps_only" ? (
-          <Row title="Most reps" right={<Label>{records.mostReps.reps}</Label>} />
+
+        {points.length > 1 ? (
+          <Card>
+            <CardHeader
+              title="Estimated 1RM"
+              right={
+                <Label tone="secondary" size="small">
+                  {unit}
+                </Label>
+              }
+            />
+            <LineChart
+              values={points.map((p) => kgToUnit(p.kg, unit))}
+              marks={points.flatMap((p, i) => (e1rmPrs.has(p.workout_id) ? [i] : []))}
+              labels={points.map((p) => shortDate.format(new Date(p.performed_at)))}
+              accessibilityLabel={`Estimated one-rep max over ${points.length} sessions, latest ${formatWeight(points.at(-1)!.kg, unit)}`}
+            />
+          </Card>
         ) : null}
 
         <SectionHeader>History</SectionHeader>
@@ -100,22 +146,34 @@ export default function ExerciseDetailScreen() {
             message="Finished workouts with this exercise show up here."
           />
         ) : (
-          history.map((session) => (
-            <View key={session.workout_id} style={styles.session}>
-              <Label size="small" tone="secondary">
-                {dateFormat.format(new Date(session.performed_at))} · {session.workout_name}
-              </Label>
-              {session.sets.map((set) => (
-                <Label
-                  key={`${set.exercise_index}-${set.set_index}`}
-                  tone={set.completed ? "default" : "secondary"}
-                >
-                  {formatSet(set, info.tracking, settings)}
-                  {set.set_type === "normal" ? "" : `  ${SET_TYPE_LABELS[set.set_type]}`}
-                </Label>
-              ))}
-            </View>
-          ))
+          history.map((session) => {
+            const kinds = prsByWorkout.get(session.workout_id) ?? [];
+            return (
+              <Card key={session.workout_id}>
+                <View style={styles.sessionHeader}>
+                  <Label size="small" tone="secondary" style={styles.flex}>
+                    {dateFormat.format(new Date(session.performed_at))} · {session.workout_name}
+                  </Label>
+                  {kinds.length > 0 ? (
+                    <Pill
+                      icon="trophy"
+                      tone="accent"
+                      label={kinds.map((k) => PR_LABELS[k]).join(", ")}
+                    />
+                  ) : null}
+                </View>
+                {session.sets.map((set) => (
+                  <Label
+                    key={`${set.exercise_index}-${set.set_index}`}
+                    tone={set.completed ? "default" : "secondary"}
+                  >
+                    {formatSet(set, info.tracking, settings)}
+                    {set.set_type === "normal" ? "" : `  ${SET_TYPE_LABELS[set.set_type]}`}
+                  </Label>
+                ))}
+              </Card>
+            );
+          })
         )}
       </ScrollView>
     </Screen>
@@ -123,7 +181,7 @@ export default function ExerciseDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.five * 2 },
-  summary: { padding: Spacing.three, gap: Spacing.one },
-  session: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: 2 },
+  content: { padding: Spacing.three, gap: Spacing.three - 4, paddingBottom: Spacing.five * 2 },
+  sessionHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.two },
+  flex: { flex: 1 },
 });

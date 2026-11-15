@@ -6,7 +6,7 @@ export const unstable_settings = { anchor: "index" };
 export default function HistoryLayout() {
   return (
     <Stack>
-      <Stack.Screen name="index" options={{ title: "History" }} />
+      <Stack.Screen name="index" options={{ headerShown: false, title: "History" }} />
       <Stack.Screen name="[id]" options={{ title: "" }} />
       <Stack.Screen name="edit" options={{ title: "Edit session" }} />
       <Stack.Screen
