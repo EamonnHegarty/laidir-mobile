@@ -197,7 +197,7 @@ function ExerciseCard({
             {name}
           </Label>
         </Pressable>
-        <IconButton label="✕" a11y={`Remove ${name}`} onPress={onRemove} />
+        <IconButton icon="close" a11y={`Remove ${name}`} onPress={onRemove} />
       </View>
 
       <View style={styles.restRow}>
@@ -368,7 +368,7 @@ function SetRow({
         />
       ) : null}
 
-      <IconButton label="−" a11y={a11y("Remove")} onPress={onRemove} disabled={!canRemove} />
+      <IconButton icon="remove" a11y={a11y("Remove")} onPress={onRemove} disabled={!canRemove} />
     </View>
   );
 }

@@ -16,6 +16,8 @@ import {
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
+import { Icon, type IconName } from "./icon";
+
 export function Screen({ style, ...props }: ViewProps) {
   const theme = useTheme();
   return <View style={[styles.screen, { backgroundColor: theme.background }, style]} {...props} />;
@@ -103,9 +105,9 @@ export function Chip({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      style={[styles.chip, { backgroundColor: selected ? theme.tint : theme.backgroundElement }]}
+      style={[styles.chip, { backgroundColor: selected ? theme.doneRow : theme.backgroundElement }]}
     >
-      <Text style={[styles.small, { color: selected ? theme.onTint : theme.text }]}>{label}</Text>
+      <Text style={[styles.chipText, { color: selected ? theme.tint : theme.text }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -149,17 +151,29 @@ export function ClearableField({
   onChangeText,
   style,
   clearLabel = "Clear text",
+  icon,
   ...props
-}: TextInputProps & { value: string; onChangeText: (text: string) => void; clearLabel?: string }) {
+}: TextInputProps & {
+  value: string;
+  onChangeText: (text: string) => void;
+  clearLabel?: string;
+  /** Shown at the start of the field, e.g. "search". */
+  icon?: IconName;
+}) {
   const theme = useTheme();
   return (
     <View style={styles.clearable}>
       <Field
         value={value}
         onChangeText={onChangeText}
-        style={[value ? styles.clearablePadding : null, style]}
+        style={[value ? styles.clearablePadding : null, icon ? styles.iconPadding : null, style]}
         {...props}
       />
+      {icon ? (
+        <View style={styles.leadingIcon} pointerEvents="none">
+          <Icon name={icon} size={20} />
+        </View>
+      ) : null}
       {value ? (
         <Pressable
           onPress={() => onChangeText("")}
@@ -169,7 +183,7 @@ export function ClearableField({
           style={styles.clearButton}
         >
           <View style={[styles.clearCircle, { backgroundColor: theme.textSecondary }]}>
-            <Text style={[styles.clearIcon, { color: theme.backgroundElement }]}>✕</Text>
+            <Icon name="close" size={14} color={theme.backgroundElement} />
           </View>
         </Pressable>
       ) : null}
@@ -226,14 +240,14 @@ export function HeaderButton({
   );
 }
 
-/** A small square button with a symbol (↑ ↓ ✕ −) and a spoken label. */
+/** A small square button with an icon and a spoken label. */
 export function IconButton({
-  label,
+  icon,
   a11y,
   onPress,
   disabled,
 }: {
-  label: string;
+  icon: IconName;
   a11y: string;
   onPress: () => void;
   disabled?: boolean;
@@ -248,7 +262,7 @@ export function IconButton({
       hitSlop={8}
       style={[styles.iconButton, { opacity: disabled ? 0.3 : 1 }]}
     >
-      <Label size="heading">{label}</Label>
+      <Icon name={icon} size={22} />
     </Pressable>
   );
 }
@@ -288,15 +302,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   rowText: { flex: 1, gap: 2 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 },
+  chipText: { fontSize: 13, lineHeight: 18, fontWeight: 500 },
   chipRow: { gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   chipGrid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.two },
   field: {
     fontSize: 16,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 12,
   },
+  iconPadding: { paddingLeft: 40 },
+  leadingIcon: { position: "absolute", left: 12, top: 0, bottom: 0, justifyContent: "center" },
   clearable: { justifyContent: "center" },
   clearablePadding: { paddingRight: 44 },
   clearButton: {
@@ -315,8 +332,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  clearIcon: { fontSize: 11, lineHeight: 13, fontWeight: 700 },
-  button: { paddingVertical: 12, paddingHorizontal: Spacing.three, borderRadius: 10 },
+  button: { paddingVertical: 13, paddingHorizontal: Spacing.three, borderRadius: 12 },
   buttonText: { fontSize: 16, fontWeight: 600, textAlign: "center" },
   headerButton: { fontSize: 16, fontWeight: 600 },
   iconButton: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },

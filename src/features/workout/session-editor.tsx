@@ -170,7 +170,7 @@ function SessionBody({
                 </Pressable>
               ) : null}
               <IconButton
-                label="✕"
+                icon="close"
                 a11y={`Remove ${info.name}`}
                 onPress={() => onExercises((cur) => removeExercise(cur, index))}
               />
