@@ -218,7 +218,45 @@ export function workoutsRepo({ db, clock, newId }: Deps) {
       );
       return rows.map(fromRow);
     },
+
+    /** This exercise's sets from its most recent finished workouts, newest first, grouped by workout. */
+    async exerciseHistory(
+      exerciseId: ExerciseRef,
+      { limit = 20 }: { limit?: number } = {},
+    ): Promise<ExerciseSession[]> {
+      const rows = await db.all<SetLogRow & { workout_name: string }>(
+        `SELECT s.*, w.name AS workout_name
+         FROM set_log s JOIN workouts w ON w.id = s.workout_id
+         WHERE s.exercise_id = ?1 AND s.workout_id IN (
+           SELECT workout_id FROM set_log WHERE exercise_id = ?1
+           GROUP BY workout_id ORDER BY MAX(performed_at) DESC LIMIT ?2)
+         ORDER BY s.performed_at DESC, s.workout_id, s.exercise_index, s.set_index`,
+        [exerciseId, limit],
+      );
+      const sessions: ExerciseSession[] = [];
+      for (const row of rows) {
+        let session = sessions.at(-1);
+        if (session?.workout_id !== row.workout_id) {
+          session = {
+            workout_id: row.workout_id,
+            workout_name: row.workout_name,
+            performed_at: row.performed_at,
+            sets: [],
+          };
+          sessions.push(session);
+        }
+        session.sets.push(fromRow(row));
+      }
+      return sessions;
+    },
   };
 }
+
+export type ExerciseSession = {
+  workout_id: string;
+  workout_name: string;
+  performed_at: Timestamp;
+  sets: LoggedSet[];
+};
 
 export type WorkoutsRepo = ReturnType<typeof workoutsRepo>;
