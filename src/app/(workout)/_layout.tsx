@@ -1,5 +1,8 @@
 import { Stack } from "expo-router";
 
+// Keep the tab's first screen underneath anything pushed or opened as a modal.
+export const unstable_settings = { anchor: "index" };
+
 export default function WorkoutLayout() {
   return (
     <Stack>

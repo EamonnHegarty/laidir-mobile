@@ -76,7 +76,8 @@ function ActiveSession({ initial }: { initial: Loaded }) {
   const repos = useRepositories();
   const { workout, routine, custom, settings } = initial;
   const [name, setName] = useState(workout.name);
-  const [notes, setNotes] = useState(workout.notes ?? "");
+  // Notes aren't editable in the session screen for now; keep whatever is stored.
+  const notes = workout.notes ?? "";
   const [exercises, setExercises] = useState<WorkoutExercise[]>(workout.exercises);
   const [previous, setPrevious] = useState(initial.previous);
 
@@ -139,7 +140,7 @@ function ActiveSession({ initial }: { initial: Loaded }) {
           await repos.workouts.save(workout.id, final);
           await repos.workouts.finish(workout.id);
           restTimer.stop();
-          router.dismissTo({ pathname: "/(workout)/index", params: { finished: workout.id } });
+          router.dismissAll();
         },
       },
     ]);
@@ -155,7 +156,7 @@ function ActiveSession({ initial }: { initial: Loaded }) {
           cancelPendingSave();
           await repos.workouts.remove(workout.id);
           restTimer.stop();
-          router.dismissTo("/(workout)/index");
+          router.dismissAll();
         },
       },
     ]);
@@ -184,10 +185,8 @@ function ActiveSession({ initial }: { initial: Loaded }) {
       />
       <SessionEditor
         name={name}
-        notes={notes}
         exercises={exercises}
         onName={setName}
-        onNotes={setNotes}
         onExercises={setExercises}
         routine={routine}
         customExercises={custom}
