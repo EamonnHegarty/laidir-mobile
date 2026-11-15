@@ -1,4 +1,3 @@
-import * as Haptics from "expo-haptics";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { Button, Field, IconButton, Label } from "@/components/ui";
@@ -8,6 +7,7 @@ import type { Exercise, Routine, WorkoutExercise } from "@/data/contract";
 import type { Settings } from "@/data/settings";
 import type { LoggedSet } from "@/data/workouts";
 import { formatSet } from "@/lib/format-set";
+import { tapConfirm } from "@/lib/haptics";
 import { useTheme } from "@/hooks/use-theme";
 
 import { restTimer } from "./rest-timer";
@@ -23,14 +23,12 @@ import {
   toggleComplete,
   updateSet,
 } from "./session";
-import { LogSetRow } from "./set-row";
+import { LogSetHeader, LogSetRow } from "./set-row";
 
 export type SessionEditorProps = {
   name: string;
-  notes: string;
   exercises: WorkoutExercise[];
   onName: (name: string) => void;
-  onNotes: (notes: string) => void;
   onExercises: (update: (current: WorkoutExercise[]) => WorkoutExercise[]) => void;
   /** The workout template it was started from, for rest times and target hints. */
   routine: Routine | null;
@@ -43,13 +41,11 @@ export type SessionEditorProps = {
   header?: React.ReactNode;
 };
 
-/** The body of the in-progress workout: exercises with their sets, add exercises, notes. */
+/** The body of the in-progress workout: name, exercises with their sets, add exercises, discard. */
 export function SessionEditor({
   name,
-  notes,
   exercises,
   onName,
-  onNotes,
   onExercises,
   routine,
   customExercises,
@@ -115,14 +111,7 @@ export function SessionEditor({
               />
             </View>
 
-            <View style={styles.columns}>
-              <Label tone="secondary" size="small" style={styles.colSet}>
-                Set
-              </Label>
-              <Label tone="secondary" size="small" style={styles.colPrevious}>
-                Last time
-              </Label>
-            </View>
+            <LogSetHeader tracking={info.tracking} units={settings} />
 
             {exercise.sets.map((set, setIndex) => {
               if (set.set_type !== "warmup") working++;
@@ -147,7 +136,7 @@ export function SessionEditor({
                       toggleComplete(cur, index, setIndex, hints[setIndex], info.tracking),
                     );
                     if (completing) {
-                      void Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Confirm);
+                      tapConfirm();
                       restTimer.start(rest);
                     }
                   }}
@@ -169,15 +158,6 @@ export function SessionEditor({
         <Button title="Add exercises" onPress={onAddExercises} />
       ) : null}
 
-      <Field
-        value={notes}
-        onChangeText={onNotes}
-        placeholder="Session notes (optional)"
-        accessibilityLabel="Session notes"
-        multiline
-        maxLength={2000}
-        style={styles.notes}
-      />
       <Button title="Discard workout" tone="danger" onPress={onDiscard} />
     </ScrollView>
   );
@@ -194,8 +174,4 @@ const styles = StyleSheet.create({
     paddingLeft: Spacing.one,
   },
   flex: { flex: 1 },
-  columns: { flexDirection: "row", gap: Spacing.two, paddingHorizontal: 4 },
-  colSet: { width: 32, textAlign: "center" },
-  colPrevious: { width: 72 },
-  notes: { minHeight: 70, textAlignVertical: "top" },
 });
