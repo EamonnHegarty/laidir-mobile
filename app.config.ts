@@ -17,8 +17,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: "0.1.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
-  // Phase 3 Cognito redirect URIs are laidir://auth/callback and laidir://auth/logout.
-  scheme: "laidir",
+  // Cognito redirects to laidir://auth/callback and laidir://auth/logout (registered on the mobile
+  // client). The dev client gets its own scheme so the two apps never compete for those links (an
+  // Android "open with" chooser mid-sign-in); signing in from the dev client needs laidir-dev://
+  // callbacks added in laidir-infra first.
+  scheme: IS_DEV ? "laidir-dev" : "laidir",
   userInterfaceStyle: "automatic",
   platforms: ["android"],
   android: {
@@ -31,8 +34,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
     // The rest-timer alert is an alarm-clock notification so Android delivers it on time instead of
-    // deferring it for battery saving. USE_EXACT_ALARM is granted without a prompt (sideloaded app).
-    permissions: ["android.permission.USE_EXACT_ALARM"],
+    // deferring it for battery saving. That needs SCHEDULE_EXACT_ALARM, which Android 14+ leaves off
+    // until the user allows it (Settings → Rest timer). USE_EXACT_ALARM is auto-granted but Google
+    // Play restricts it to alarm/timer/calendar apps, so it's blocked even if a library adds it.
+    // Without the grant the alert still arrives, possibly a little late.
+    permissions: ["android.permission.SCHEDULE_EXACT_ALARM"],
+    blockedPermissions: ["android.permission.USE_EXACT_ALARM"],
     predictiveBackGestureEnabled: false,
   },
   plugins: [
@@ -54,7 +61,21 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         enableRemoteNotifications: false,
       },
     ],
+    // Phase 3 sign-in: Cognito managed login in the system browser (expo-auth-session), tokens in
+    // the Android Keystore-backed store (excluded from Auto Backup by the plugin).
+    "expo-web-browser",
+    "expo-secure-store",
   ],
+  // EAS Update: JS-only changes ship over the air (eas update --channel preview) without a new build.
+  // The fingerprint policy changes the runtime version whenever native code changes, so an update
+  // can never reach a build it isn't compatible with.
+  runtimeVersion: { policy: "fingerprint" },
+  updates: {
+    url: "https://u.expo.dev/da82ec53-fc13-49cf-97a9-9864e7969fed",
+    // Download in the background on launch; the new JS applies on the next launch.
+    checkAutomatically: "ON_LOAD",
+    fallbackToCacheTimeout: 0,
+  },
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
