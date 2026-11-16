@@ -4,7 +4,7 @@
     "title": "Láidir API",
     "version": "0.1.0",
     "summary": "Backup and sync for the Láidir gym tracker.",
-    "description": "The contract between the Láidir app and its backend. **This file is the source of truth**:\nthe mobile app generates its typed client from `openapi.bundled.json`, and the API's own\ntypes are generated from it too.\n\nEntity schemas live in `schemas/v1/` as JSON Schema 2020-12 and are shared with the MCP server.\n\n## Conventions\n- IDs are client-generated lowercase UUIDs. Timestamps are ISO-8601 UTC with milliseconds.\n- The user is **always** the verified token's `sub`. No endpoint takes a user ID.\n- Errors are RFC 9457 `application/problem+json`.\n- Deletes are soft: set `deleted_at`. Tombstones sync like any other change.\n- Deleting a `RoutineFolder`: tombstone the folder and push each of its routines with `folder_id`\n  removed. Readers treat a `folder_id` pointing to a missing or deleted folder as unfiled.\n- Rest timer precedence: `Profile.exercise_rest_seconds[<exercise_id>]`, then the routine's\n  `rest_seconds`, then `Profile.default_rest_seconds`.\n- Built-in exercises (`exercise_id: builtin:<slug>`) come from the static catalogue in\n  `catalogue/v1/exercises.json`, not from this API.\n\n## Sync model (phase 3)\n- **Push**: the client sends whole items. Each write is conditional on `updated_at`\n  (last writer wins). A stale write is rejected with the server's current copy.\n- **Pull**: the server stamps every accepted write with its own clock (`synced_at`, not exposed).\n  Pull pages through changes in `synced_at` order from an opaque cursor, so a device with a\n  wrong clock can't make its changes invisible to other devices.\n\nOperations marked `x-laidir-status: planned` aren't implemented yet.\n",
+    "description": "The contract between the Láidir app and its backend. **This file is the source of truth**:\nthe mobile app generates its typed client from `openapi.bundled.json`, and the API's own\ntypes are generated from it too.\n\nEntity schemas live in `schemas/v1/` as JSON Schema 2020-12 and are shared with the MCP server.\n\n## Conventions\n- IDs are client-generated lowercase UUIDs. Timestamps are ISO-8601 UTC with milliseconds.\n- The user is **always** the verified token's `sub`. No endpoint takes a user ID.\n- Errors are RFC 9457 `application/problem+json`.\n- Deletes are soft: set `deleted_at`. Tombstones sync like any other change.\n- Deleting a `RoutineFolder`: tombstone the folder and push each of its routines with `folder_id`\n  removed. Readers treat a `folder_id` pointing to a missing or deleted folder as unfiled.\n- Rest timer precedence: `Profile.exercise_rest_seconds[<exercise_id>]`, then the routine's\n  `rest_seconds`, then `Profile.default_rest_seconds`.\n- Built-in exercises (`exercise_id: builtin:<slug>`) come from the static catalogue in\n  `catalogue/v1/exercises.json`, not from this API.\n\n## Sync model (phase 3)\n- **Push**: the client sends whole items. Each write is conditional on `updated_at`\n  (last writer wins). A stale write is rejected with the server's current copy.\n- **Pull**: the server stamps every accepted write with its own clock (`synced_at`, not exposed).\n  Pull pages through changes in `synced_at` order from an opaque cursor, so a device with a\n  wrong clock can't make its changes invisible to other devices.\n\nAccess tokens from the `laidir-<env>-mobile` and `laidir-<env>-devtools` Cognito clients are accepted.\n",
     "license": {
       "name": "MIT",
       "identifier": "MIT"
@@ -77,7 +77,6 @@
         "tags": [
           "sync"
         ],
-        "x-laidir-status": "planned",
         "parameters": [
           {
             "name": "cursor",
@@ -120,6 +119,9 @@
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
           }
         }
       },
@@ -130,7 +132,6 @@
         "tags": [
           "sync"
         ],
-        "x-laidir-status": "planned",
         "requestBody": {
           "required": true,
           "content": {
@@ -163,6 +164,9 @@
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
           }
         }
       }
@@ -175,7 +179,6 @@
         "tags": [
           "profile"
         ],
-        "x-laidir-status": "planned",
         "responses": {
           "200": {
             "description": "The profile.",
@@ -195,6 +198,9 @@
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
           }
         }
       }
@@ -204,7 +210,7 @@
     "securitySchemes": {
       "cognito": {
         "type": "oauth2",
-        "description": "Cognito access token (authorization code + PKCE). Validated by API Gateway's JWT authorizer.",
+        "description": "Cognito access token (authorization code + PKCE). Validated by API Gateway's JWT authorizer (mobile and devtools clients).",
         "flows": {
           "authorizationCode": {
             "authorizationUrl": "https://laidir-prod-4d9359.auth.eu-west-1.amazoncognito.com/oauth2/authorize",
@@ -1006,6 +1012,16 @@
       },
       "PayloadTooLarge": {
         "description": "Request body too large.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Unexpected server error. Retrying is safe (pushes are idempotent).",
         "content": {
           "application/problem+json": {
             "schema": {
