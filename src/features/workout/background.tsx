@@ -3,8 +3,9 @@ import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 
-import { useLiveQuery } from "@/data/database-provider";
+import { useLiveQuery, useRepositories } from "@/data/database-provider";
 
+import { exactAlarmsAllowed, promptForExactAlarms } from "./exact-alarm";
 import {
   cancelWorkoutReminder,
   installRestAlerts,
@@ -12,6 +13,7 @@ import {
   scheduleWorkoutReminder,
   setRestAlertMode,
 } from "./rest-alert";
+import { restTimer } from "./rest-timer";
 import { RestWatcher } from "./timers";
 
 /**
@@ -64,5 +66,35 @@ export function WorkoutBackground() {
     };
   }, []);
 
+  useExactAlarmPrompt(query.data?.restAlert);
+
   return <RestWatcher />;
+}
+
+/**
+ * The first time a rest starts with an audible/vibrating alert, if Android hasn't allowed exact
+ * alarms, explain and offer to open the setting. Asked once per phone (Settings has it too).
+ */
+function useExactAlarmPrompt(restAlert: string | undefined) {
+  const repos = useRepositories();
+  const alert = useRef(restAlert);
+  useEffect(() => {
+    alert.current = restAlert;
+  }, [restAlert]);
+  useEffect(() => {
+    let checking = false;
+    return restTimer.subscribe(() => {
+      if (checking || !restTimer.get() || !alert.current || alert.current === "silent") return;
+      checking = true;
+      void (async () => {
+        try {
+          if (await repos.settings.exactAlarmAsked()) return;
+          if (await exactAlarmsAllowed()) return;
+          promptForExactAlarms(() => void repos.settings.setExactAlarmAsked());
+        } finally {
+          checking = false;
+        }
+      })();
+    });
+  }, [repos]);
 }
