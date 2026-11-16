@@ -30,8 +30,22 @@ describe("app.config variants", () => {
     expect(config.android?.package).toBe("ie.eamonnhegarty.laidir.dev");
   });
 
-  it("keeps the laidir scheme the phase 3 Cognito redirects rely on", () => {
+  it("gives only the real app the laidir scheme Cognito redirects to", () => {
     expect(loadConfig().scheme).toBe("laidir");
-    expect(loadConfig("development").scheme).toBe("laidir");
+    // Its own scheme, so the dev client never competes for laidir://auth/callback.
+    expect(loadConfig("development").scheme).toBe("laidir-dev");
+  });
+
+  it("uses the Play-safe exact-alarm permission", () => {
+    const { android } = loadConfig();
+    expect(android?.permissions).toContain("android.permission.SCHEDULE_EXACT_ALARM");
+    expect(android?.permissions).not.toContain("android.permission.USE_EXACT_ALARM");
+    expect(android?.blockedPermissions).toContain("android.permission.USE_EXACT_ALARM");
+  });
+
+  it("ships over-the-air updates only to compatible builds", () => {
+    const config = loadConfig();
+    expect(config.runtimeVersion).toEqual({ policy: "fingerprint" });
+    expect(config.updates?.url).toBe("https://u.expo.dev/da82ec53-fc13-49cf-97a9-9864e7969fed");
   });
 });
