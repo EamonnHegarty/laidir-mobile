@@ -2,11 +2,12 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
 import { NativeTabs } from "expo-router/native-tabs";
 import * as SystemUI from "expo-system-ui";
 import { useEffect } from "react";
-import { useColorScheme } from "react-native";
+import { Appearance, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { DEFAULT_ACCENT } from "@/constants/theme";
 import { DatabaseProvider, useLiveQuery } from "@/data/database-provider";
+import { WorkoutBackground } from "@/features/workout/background";
 import { AccentContext, useTheme } from "@/hooks/use-theme";
 
 export default function RootLayout() {
@@ -15,16 +16,33 @@ export default function RootLayout() {
       <DatabaseProvider>
         <AccentProvider>
           <ThemedTabs />
+          <WorkoutBackground />
         </AccentProvider>
       </DatabaseProvider>
     </GestureHandlerRootView>
   );
 }
 
-/** Applies the accent colour picked in Settings to every screen (live, no restart). */
+/**
+ * Applies the accent colour and appearance (light / dark / system) picked in Settings to every
+ * screen, live. Appearance overrides the app's colour scheme natively, so useColorScheme, the tab bar
+ * and system dialogs all follow it.
+ */
 function AccentProvider({ children }: { children: React.ReactNode }) {
-  const accent = useLiveQuery((r) => r.settings.accent(), []);
-  return <AccentContext value={accent.data ?? DEFAULT_ACCENT}>{children}</AccentContext>;
+  const query = useLiveQuery(
+    async (r) => ({ accent: await r.settings.accent(), appearance: await r.settings.appearance() }),
+    [],
+  );
+  const appearance = query.data?.appearance;
+  useEffect(() => {
+    if (!appearance) return;
+    try {
+      Appearance.setColorScheme(appearance === "system" ? "unspecified" : appearance);
+    } catch {
+      // Not available (tests): keep following the phone.
+    }
+  }, [appearance]);
+  return <AccentContext value={query.data?.accent ?? DEFAULT_ACCENT}>{children}</AccentContext>;
 }
 
 function ThemedTabs() {

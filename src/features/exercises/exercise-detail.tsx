@@ -1,14 +1,24 @@
 import { Stack } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
 
-import { LineChart } from "@/components/charts";
-import { Card, CardHeader, Pill, PillRow, StatTile, StatTiles } from "@/components/glas";
+import { BarChart, LineChart } from "@/components/charts";
+import {
+  Card,
+  CardHeader,
+  IconAction,
+  Pill,
+  PillRow,
+  StatTile,
+  StatTiles,
+} from "@/components/glas";
 import { EmptyState, HeaderButton, Label, Screen, SectionHeader } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
-import { describeExercise, isBuiltinRef } from "@/data/catalogue";
+import { describeExercise, type ExerciseInfo, isBuiltinRef } from "@/data/catalogue";
+import type { Tracking } from "@/data/contract";
+import type { ExerciseSession, LoggedSet } from "@/data/workouts";
 import { useLiveQuery } from "@/data/database-provider";
 import { exerciseRecords } from "@/features/exercises/records";
-import { e1rmSeries, type PrKind } from "@/features/stats/model";
+import { e1rmSeries, isWorking, type PrKind, setVolume } from "@/features/stats/model";
 import { useStats } from "@/features/stats/use-stats";
 import { formatSet } from "@/lib/format-set";
 import { EQUIPMENT_LABELS, MUSCLE_LABELS, SET_TYPE_LABELS, TRACKING_LABELS } from "@/lib/labels";
@@ -32,9 +42,12 @@ const PR_LABELS: Record<PrKind, string> = { e1rm: "e1RM", weight: "Heaviest", re
 export function ExerciseDetail({
   exerciseRef: ref,
   onEdit,
+  onClose,
 }: {
   exerciseRef: string;
   onEdit?: () => void;
+  /** Shown as a close button (✕) when the page is opened as a sheet over a workout. */
+  onClose?: () => void;
 }) {
   const query = useLiveQuery(
     async (r) => {
@@ -71,8 +84,16 @@ export function ExerciseDetail({
 
   const muscles = [
     info.primary_muscle ? MUSCLE_LABELS[info.primary_muscle] : undefined,
-    ...(custom?.secondary_muscles ?? []).map((m) => MUSCLE_LABELS[m]),
+    ...info.secondary_muscles.map((m) => MUSCLE_LABELS[m]),
   ].filter((m) => m !== undefined) as string[];
+
+  // Oldest first, for the charts.
+  const sessionsOldest = [...history].reverse();
+  const volumes = sessionsOldest.map((session) =>
+    session.sets.reduce((sum, set) => sum + setVolume(set, info.tracking), 0),
+  );
+  const showVolume = volumes.filter((v) => v > 0).length > 1;
+  const best = bestSets(history, info.tracking);
 
   const tiles: { label: string; value: string; accent?: boolean }[] = [];
   if (records.bestOneRepMax) {
@@ -99,6 +120,9 @@ export function ExerciseDetail({
         options={{
           title: info.name,
           headerRight: editable ? () => <HeaderButton title="Edit" onPress={onEdit} /> : undefined,
+          headerLeft: onClose
+            ? () => <IconAction icon="close" label="Close" onPress={onClose} />
+            : undefined,
         }}
       />
       <ScrollView contentContainerStyle={styles.content}>
@@ -112,6 +136,7 @@ export function ExerciseDetail({
             <Pill label={info.retired ? "Deleted custom exercise" : "Custom"} />
           ) : null}
         </PillRow>
+        <Label tone="secondary">{describe(info)}</Label>
         {custom?.notes ? <Label>{custom.notes}</Label> : null}
 
         {history.length > 0 ? (
@@ -138,6 +163,43 @@ export function ExerciseDetail({
               labels={points.map((p) => shortDate.format(new Date(p.performed_at)))}
               accessibilityLabel={`Estimated one-rep max over ${points.length} sessions, latest ${formatWeight(points.at(-1)!.kg, unit)}`}
             />
+          </Card>
+        ) : null}
+
+        {showVolume ? (
+          <Card>
+            <CardHeader
+              title="Volume per session"
+              right={
+                <Label tone="secondary" size="small">
+                  {unit}
+                </Label>
+              }
+            />
+            <BarChart
+              values={volumes.map((kg) => kgToUnit(kg, unit))}
+              labels={sessionsOldest.map((s) => shortDate.format(new Date(s.performed_at)))}
+              accessibilityLabel={`Volume over ${volumes.length} sessions, latest ${formatWeight(volumes.at(-1) ?? 0, unit)}`}
+            />
+          </Card>
+        ) : null}
+
+        {best.length > 0 ? (
+          <Card>
+            <CardHeader title="Best sets" />
+            {best.map((set, i) => (
+              <View
+                key={`${set.workout_id}-${set.exercise_index}-${set.set_index}`}
+                style={styles.bestRow}
+              >
+                <Label tone={i === 0 ? "tint" : "default"} style={styles.flex}>
+                  {formatSet(set, info.tracking, settings)}
+                </Label>
+                <Label tone="secondary" size="small">
+                  {shortDate.format(new Date(set.performed_at))}
+                </Label>
+              </View>
+            ))}
           </Card>
         ) : null}
 
@@ -182,8 +244,37 @@ export function ExerciseDetail({
   );
 }
 
+/** "Barbell exercise for chest, also working triceps and shoulders. Logged as weight and reps." */
+export function describe(info: ExerciseInfo): string {
+  const lower = (s: string) => s.toLowerCase();
+  const list = (items: string[]) =>
+    items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
+  const kind = info.equipment ? `${EQUIPMENT_LABELS[info.equipment]} exercise` : "Exercise";
+  const target = info.primary_muscle ? ` for ${lower(MUSCLE_LABELS[info.primary_muscle])}` : "";
+  const also =
+    info.secondary_muscles.length > 0
+      ? `, also working ${list(info.secondary_muscles.map((m) => lower(MUSCLE_LABELS[m])))}`
+      : "";
+  return `${kind}${target}${also}. Logged as ${lower(TRACKING_LABELS[info.tracking])}.`;
+}
+
+/** Up to three best working sets: by estimated 1RM when weighted, otherwise most reps or longest. */
+function bestSets(history: readonly ExerciseSession[], tracking: Tracking): LoggedSet[] {
+  const score = (set: LoggedSet): number => {
+    if (set.weight_kg !== undefined && set.reps !== undefined && tracking !== "assisted_bodyweight")
+      return set.weight_kg * (1 + set.reps / 30);
+    return set.reps ?? set.duration_s ?? set.distance_m ?? 0;
+  };
+  return history
+    .flatMap((s) => s.sets)
+    .filter((set) => isWorking(set) && score(set) > 0)
+    .sort((a, b) => score(b) - score(a))
+    .slice(0, 3);
+}
+
 const styles = StyleSheet.create({
   content: { padding: Spacing.three, gap: Spacing.three - 4, paddingBottom: Spacing.five * 2 },
   sessionHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.two },
+  bestRow: { flexDirection: "row", alignItems: "center", gap: Spacing.two, paddingVertical: 2 },
   flex: { flex: 1 },
 });

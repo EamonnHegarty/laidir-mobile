@@ -1,5 +1,6 @@
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 
+import { TimerField } from "@/components/timer-field";
 import { Button, Chip, ChipGrid, Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
@@ -55,6 +56,24 @@ export function RestPicker({
             ))}
             <Chip label="Off" selected={current === 0} onPress={() => pick(0)} />
           </ChipGrid>
+          <View style={styles.custom}>
+            <Label tone="secondary">Custom</Label>
+            <TimerField
+              seconds={
+                (REST_CHOICES as readonly number[]).includes(current)
+                  ? undefined
+                  : current || undefined
+              }
+              commit={(seconds) => {
+                if (seconds === undefined || seconds > 3600) return false;
+                pick(seconds);
+                return true;
+              }}
+              placeholder="m:ss"
+              accessibilityLabel={`Custom rest time for ${exerciseName}`}
+              style={styles.customField}
+            />
+          </View>
           <View style={styles.actions}>
             {chosen ? (
               <Button
@@ -82,5 +101,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 16,
   },
   actions: { flexDirection: "row", gap: Spacing.two },
+  custom: { flexDirection: "row", alignItems: "center", gap: Spacing.three },
+  customField: { flex: 1, textAlign: "center", fontSize: 18 },
   flex: { flex: 1 },
 });

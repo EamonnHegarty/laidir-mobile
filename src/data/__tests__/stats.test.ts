@@ -61,3 +61,18 @@ describe("accent", () => {
     expect(await repos.settings.accent()).toBe("glas");
   });
 });
+
+describe("device-only settings", () => {
+  it("defaults appearance to System, rest alert to both and the reminder on", async () => {
+    const { repos } = await setup();
+    expect(await repos.settings.appearance()).toBe("system");
+    expect(await repos.settings.restAlert()).toBe("both");
+    expect(await repos.settings.workoutReminder()).toBe(true);
+    await repos.settings.setAppearance("dark");
+    await repos.settings.setRestAlert("silent");
+    await repos.settings.setWorkoutReminder(false);
+    expect(await repos.settings.appearance()).toBe("dark");
+    expect(await repos.settings.restAlert()).toBe("silent");
+    expect(await repos.settings.workoutReminder()).toBe(false);
+  });
+});

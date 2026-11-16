@@ -105,7 +105,7 @@ export function Chip({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      style={[styles.chip, { backgroundColor: selected ? theme.doneRow : theme.backgroundElement }]}
+      style={[styles.chip, { backgroundColor: selected ? theme.doneRow : theme.control }]}
     >
       <Text style={[styles.chipText, { color: selected ? theme.tint : theme.text }]}>{label}</Text>
     </Pressable>
@@ -135,7 +135,7 @@ export function Field({ style, ...props }: TextInputProps) {
   const theme = useTheme();
   return (
     <TextInput
-      placeholderTextColor={theme.textSecondary}
+      placeholderTextColor={theme.placeholder}
       style={[styles.field, { backgroundColor: theme.backgroundElement, color: theme.text }, style]}
       {...props}
     />

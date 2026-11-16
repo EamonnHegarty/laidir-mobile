@@ -1,21 +1,19 @@
 import { useScreenAwake } from "@/lib/keep-awake";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Alert, Keyboard, StyleSheet, View } from "react-native";
+import { Alert, AppState, Keyboard, StyleSheet, View } from "react-native";
 
-import { Button, EmptyState, Label, Screen } from "@/components/ui";
+import { Button, EmptyState, Screen } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import type { Exercise, ExerciseRef, Routine, Workout, WorkoutExercise } from "@/data/contract";
 import { useLiveQuery, useRepositories } from "@/data/database-provider";
 import type { Settings } from "@/data/settings";
 import type { LoggedSet } from "@/data/workouts";
 import { openExercisePicker } from "@/features/exercises/exercise-picker";
-import { installRestAlerts } from "@/features/workout/rest-alert";
 import { restTimer } from "@/features/workout/rest-timer";
-import { addExercises, cleanForFinish, summarise } from "@/features/workout/session";
+import { addExercises, cleanForFinish, summarise, withNotes } from "@/features/workout/session";
 import { SessionEditor } from "@/features/workout/session-editor";
-import { formatTotalWeight } from "@/features/stats/format";
-import { ElapsedTime, FinishButton, RestBar } from "@/features/workout/timers";
+import { ElapsedTime, FinishButton, RestOverlay } from "@/features/workout/timers";
 
 type Loaded = {
   workout: Workout;
@@ -83,8 +81,6 @@ function previousFor(
 
 const SAVE_DELAY_MS = 400;
 
-installRestAlerts();
-
 function ActiveSession({ initial }: { initial: Loaded }) {
   // The phone shouldn't sleep between sets.
   useScreenAwake("active-workout");
@@ -137,6 +133,19 @@ function ActiveSession({ initial }: { initial: Loaded }) {
     [repos, workout.id],
   );
 
+  // The app leaving the screen (home, lock, switching app) saves straight away too, so nothing is
+  // lost if Android then closes it.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next !== "active" && pending.current) {
+        clearTimeout(pending.current);
+        pending.current = null;
+        void repos.workouts.save(workout.id, latest.current);
+      }
+    });
+    return () => sub.remove();
+  }, [repos, workout.id]);
+
   const cancelPendingSave = () => {
     if (pending.current) clearTimeout(pending.current);
     pending.current = null;
@@ -153,23 +162,29 @@ function ActiveSession({ initial }: { initial: Loaded }) {
       );
       return;
     }
-    const unticked =
-      summary.unfinishedSets > 0
-        ? ` ${summary.unfinishedSets} unticked ${summary.unfinishedSets === 1 ? "set" : "sets"}: empty ones are removed, filled-in ones are kept as not done.`
-        : "";
-    Alert.alert("Finish workout?", `${summary.completedSets} sets done.${unticked}`, [
+    const done = async () => {
+      cancelPendingSave();
+      const final = { ...latest.current, exercises: cleanForFinish(latest.current.exercises) };
+      await repos.workouts.save(workout.id, final);
+      await repos.workouts.finish(workout.id);
+      restTimer.stop();
+      router.dismissAll();
+    };
+    const left = summary.unfinishedSets;
+    if (left > 0) {
+      Alert.alert(
+        `${left} ${left === 1 ? "set" : "sets"} not completed`,
+        "Finish anyway to end the workout without them, or go back to complete or edit them.",
+        [
+          { text: "Go back", style: "cancel" },
+          { text: "Finish anyway", onPress: () => void done() },
+        ],
+      );
+      return;
+    }
+    Alert.alert("Finish workout?", `${summary.completedSets} sets done.`, [
       { text: "Keep going", style: "cancel" },
-      {
-        text: "Finish",
-        onPress: async () => {
-          cancelPendingSave();
-          const final = { ...latest.current, exercises: cleanForFinish(latest.current.exercises) };
-          await repos.workouts.save(workout.id, final);
-          await repos.workouts.finish(workout.id);
-          restTimer.stop();
-          router.dismissAll();
-        },
-      },
+      { text: "Finish", onPress: () => void done() },
     ]);
   };
 
@@ -192,7 +207,14 @@ function ActiveSession({ initial }: { initial: Loaded }) {
     openExercisePicker(
       () => router.push("/pick-exercise"),
       async (refs) => {
-        setExercises((current) => addExercises(current, refs));
+        let from = 0;
+        setExercises((current) => {
+          from = current.length;
+          return addExercises(current, refs);
+        });
+        // Notes from last time ("seat on 4") for the exercises just added.
+        const notes = await repos.workouts.lastNotes(refs);
+        if (notes.size > 0) setExercises((current) => withNotes(current, notes, from));
         const missing = refs.filter((ref) => !previous.has(ref));
         if (missing.length > 0) {
           const found = await previousFor(repos, missing);
@@ -206,14 +228,7 @@ function ActiveSession({ initial }: { initial: Loaded }) {
       <Stack.Screen
         options={{
           title: "",
-          headerLeft: () => (
-            <View style={styles.headerLeft}>
-              <ElapsedTime startedAt={workout.started_at} />
-              <Label tone="secondary">
-                · {formatTotalWeight(summarise(exercises).volumeKg, settings.weight_unit)}
-              </Label>
-            </View>
-          ),
+          headerLeft: () => <ElapsedTime startedAt={workout.started_at} />,
           headerRight: () => <FinishButton onPress={finish} />,
         }}
       />
@@ -229,15 +244,14 @@ function ActiveSession({ initial }: { initial: Loaded }) {
         exerciseRest={exerciseRest}
         onExerciseRest={chooseRest}
         onAddExercises={addFromPicker}
-        onShowHistory={(ref) => router.push({ pathname: "/exercise-history", params: { ref } })}
+        onShowExercise={(ref) => router.push({ pathname: "/exercise-history", params: { ref } })}
         onDiscard={discard}
       />
-      <RestBar />
+      <RestOverlay />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   pad: { padding: Spacing.three },
-  headerLeft: { flexDirection: "row", alignItems: "center", gap: 4 },
 });

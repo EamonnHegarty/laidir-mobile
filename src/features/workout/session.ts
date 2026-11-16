@@ -76,18 +76,67 @@ export function removeSet(
   }));
 }
 
-/** Changes a set. undefined removes a value (contract: optional fields are absent). */
+/**
+ * Changes a set. undefined removes a value (contract: optional fields are absent).
+ *
+ * With `fillBelow`, a weight, reps, time or distance typed into a set is copied into the sets
+ * below it of the same type that aren't done yet, so filling in set 1 fills the rest. Only sets
+ * that are empty for that value, or still hold what this set had (so were filled from it), follow
+ * along: a set you've typed something else into keeps it. Sets above never change.
+ */
 export function updateSet(
   exercises: readonly WorkoutExercise[],
   index: number,
   setIndex: number,
   changes: Partial<WorkoutSet>,
+  { fillBelow = false }: { fillBelow?: boolean } = {},
 ): WorkoutExercise[] {
-  return mapExercise(exercises, index, (exercise) => ({
-    ...exercise,
-    sets: exercise.sets.map((set, i) => (i === setIndex ? applyChanges(set, changes) : set)),
-  }));
+  return mapExercise(exercises, index, (exercise) => {
+    const before = exercise.sets[setIndex];
+    if (!before) return exercise;
+    const measures = fillBelow ? MEASURES.filter((k) => k in changes) : [];
+    return {
+      ...exercise,
+      sets: exercise.sets.map((set, i) => {
+        if (i === setIndex) return applyChanges(set, changes);
+        if (i < setIndex || measures.length === 0) return set;
+        if (set.completed || set.set_type !== before.set_type) return set;
+        const follow: Partial<WorkoutSet> = {};
+        for (const key of measures) {
+          if (set[key] === undefined || set[key] === before[key]) follow[key] = changes[key];
+        }
+        return Object.keys(follow).length > 0 ? applyChanges(set, follow) : set;
+      }),
+    };
+  });
 }
+
+/** Sets (or with an empty text, removes) an exercise's note, e.g. "seat on 4". */
+export function setNote(
+  exercises: readonly WorkoutExercise[],
+  index: number,
+  text: string,
+): WorkoutExercise[] {
+  const note = text.trim().slice(0, MAX_NOTE);
+  return mapExercise(exercises, index, ({ notes: _old, ...exercise }) =>
+    note ? { ...exercise, notes: note } : exercise,
+  );
+}
+
+/** Gives exercises without a note the one carried over from last time (`notes` by exercise ref). */
+export function withNotes(
+  exercises: readonly WorkoutExercise[],
+  notes: ReadonlyMap<ExerciseRef, string>,
+  from = 0,
+): WorkoutExercise[] {
+  return exercises.map((exercise, i) => {
+    const note = notes.get(exercise.exercise_id);
+    return i < from || exercise.notes || !note ? exercise : { ...exercise, notes: note };
+  });
+}
+
+/** Contract limit for notes (common.json Notes). */
+export const MAX_NOTE = 2000;
 
 /**
  * Ticks a set done (or un-ticks it). Ticking fills any empty measurement from the hint shown in
@@ -173,17 +222,12 @@ export function templateFor(
 }
 
 /**
- * What gets saved at Finish: sets never ticked and never filled in are dropped, then exercises
- * left with no sets. Partly filled unticked sets are kept as not done.
+ * What gets saved at Finish ("Finish anyway"): only the sets ticked off; unticked ones are left
+ * out, then exercises left with no sets.
  */
 export function cleanForFinish(exercises: readonly WorkoutExercise[]): WorkoutExercise[] {
   return exercises
-    .map((exercise) => ({
-      ...exercise,
-      sets: exercise.sets.filter(
-        (set) => set.completed || MEASURES.some((k) => set[k] !== undefined),
-      ),
-    }))
+    .map((exercise) => ({ ...exercise, sets: exercise.sets.filter((set) => set.completed) }))
     .filter((exercise) => exercise.sets.length > 0);
 }
 

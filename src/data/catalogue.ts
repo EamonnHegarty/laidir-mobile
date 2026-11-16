@@ -44,6 +44,7 @@ export type ExerciseInfo = {
   name: string;
   equipment?: Equipment;
   primary_muscle?: MuscleGroup;
+  secondary_muscles: MuscleGroup[];
   tracking: Tracking;
   source: "builtin" | "custom" | "unknown";
   /** Deprecated built-in or deleted custom exercise: still shown in history, hidden from pickers. */
@@ -63,6 +64,7 @@ export function describeExercise(ref: ExerciseRef, custom?: Exercise | null): Ex
       name: builtin.name,
       equipment: builtin.equipment,
       primary_muscle: builtin.primary_muscle,
+      secondary_muscles: builtin.secondary_muscles ?? [],
       tracking: builtin.tracking,
       source: "builtin",
       retired: builtin.deprecated === true,
@@ -74,6 +76,7 @@ export function describeExercise(ref: ExerciseRef, custom?: Exercise | null): Ex
       name: custom.name,
       equipment: custom.equipment,
       primary_muscle: custom.primary_muscle,
+      secondary_muscles: custom.secondary_muscles ?? [],
       tracking: custom.tracking,
       source: "custom",
       retired: custom.deleted_at !== null,
@@ -82,6 +85,7 @@ export function describeExercise(ref: ExerciseRef, custom?: Exercise | null): Ex
   return {
     ref,
     name: "Unknown exercise",
+    secondary_muscles: [],
     tracking: "weight_reps",
     source: "unknown",
     retired: true,

@@ -1,4 +1,11 @@
-import { type AccentName, DEFAULT_ACCENT, isAccentName } from "@/constants/theme";
+import {
+  type AccentName,
+  type Appearance,
+  DEFAULT_ACCENT,
+  DEFAULT_APPEARANCE,
+  isAccentName,
+  isAppearance,
+} from "@/constants/theme";
 
 import type { Profile } from "./contract";
 import type { Db } from "./db";
@@ -98,6 +105,39 @@ export function settingsRepo({ db }: { db: Db }) {
       );
     },
 
+    /** Light, dark or follow the phone. Device-only. */
+    async appearance(): Promise<Appearance> {
+      const value = await readLocal(db, APPEARANCE_KEY);
+      return isAppearance(value) ? value : DEFAULT_APPEARANCE;
+    },
+
+    async setAppearance(appearance: Appearance): Promise<void> {
+      if (!isAppearance(appearance))
+        throw new RangeError(`Unknown appearance ${String(appearance)}`);
+      await writeLocal(db, APPEARANCE_KEY, appearance);
+    },
+
+    /** How the end of a rest is signalled (sound, vibration, both or nothing). Device-only. */
+    async restAlert(): Promise<RestAlert> {
+      const value = await readLocal(db, REST_ALERT_KEY);
+      return isRestAlert(value) ? value : DEFAULT_REST_ALERT;
+    },
+
+    async setRestAlert(alert: RestAlert): Promise<void> {
+      if (!isRestAlert(alert)) throw new RangeError(`Unknown rest alert ${String(alert)}`);
+      await writeLocal(db, REST_ALERT_KEY, alert);
+    },
+
+    /** Whether to remind you about a workout left running with the app closed. Device-only. */
+    async workoutReminder(): Promise<boolean> {
+      const value = await readLocal(db, REMINDER_KEY);
+      return typeof value === "boolean" ? value : true;
+    },
+
+    async setWorkoutReminder(on: boolean): Promise<void> {
+      await writeLocal(db, REMINDER_KEY, on);
+    },
+
     /** Remembers the rest for one exercise; `null` goes back to the template/default. */
     async setExerciseRest(ref: string, seconds: number | null): Promise<void> {
       if (seconds !== null && (!Number.isInteger(seconds) || seconds < 0 || seconds > MAX_REST)) {
@@ -129,6 +169,28 @@ const NAME_KEY = "display_name";
 /** Not a Profile field: the "local_" prefix marks device-only keys, left out of the Profile at login. */
 const ACCENT_KEY = "local_accent";
 const MAX_NAME = 50;
+const APPEARANCE_KEY = "local_appearance";
+const REST_ALERT_KEY = "local_rest_alert";
+const REMINDER_KEY = "local_workout_reminder";
+
+export const REST_ALERTS = ["both", "sound", "vibrate", "silent"] as const;
+export type RestAlert = (typeof REST_ALERTS)[number];
+export const DEFAULT_REST_ALERT: RestAlert = "both";
+export function isRestAlert(value: unknown): value is RestAlert {
+  return typeof value === "string" && (REST_ALERTS as readonly string[]).includes(value);
+}
+
+async function readLocal(db: Db, key: string): Promise<unknown> {
+  const [row] = await db.all<{ value: string }>("SELECT value FROM settings WHERE key = ?", [key]);
+  return row ? JSON.parse(row.value) : undefined;
+}
+
+async function writeLocal(db: Db, key: string, value: unknown): Promise<void> {
+  await db.run(
+    "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+    [key, JSON.stringify(value)],
+  );
+}
 
 type RestMap = NonNullable<Profile["exercise_rest_seconds"]>;
 

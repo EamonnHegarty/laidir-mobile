@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { CommitField } from "@/components/commit-field";
+import { TimerField } from "@/components/timer-field";
 import { ReorderList, setCount } from "@/components/reorder-list";
 import { Button, Chip, ChipGrid, Field, IconButton, Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
@@ -10,13 +11,7 @@ import type { Exercise, RoutineFolder, RoutineSet, SetType, Tracking } from "@/d
 import type { Settings } from "@/data/settings";
 import { useTheme } from "@/hooks/use-theme";
 import { SET_TYPE_LABELS } from "@/lib/labels";
-import {
-  durationInput,
-  formatRepRange,
-  parseDecimal,
-  parseDuration,
-  parseRepRange,
-} from "@/lib/parse";
+import { formatRepRange, parseDecimal, parseRepRange } from "@/lib/parse";
 import { displayNumber, kgToUnit, unitToKg } from "@/lib/units";
 
 import {
@@ -204,17 +199,15 @@ function ExerciseCard({
         <Label tone="secondary" size="small">
           Rest
         </Label>
-        <CommitField
-          value={durationInput(restSeconds)}
-          commit={(text) => {
-            const seconds = parseDuration(text);
-            if (seconds === null || (seconds ?? 0) > 3600) return false;
+        <TimerField
+          seconds={restSeconds}
+          commit={(seconds) => {
+            if ((seconds ?? 0) > 3600) return false;
             onRest(seconds);
             return true;
           }}
           placeholder="default"
           accessibilityLabel={`Rest time for ${name}`}
-          keyboardType="numbers-and-punctuation"
           style={styles.restField}
         />
       </View>
@@ -353,17 +346,15 @@ function SetRow({
       ) : null}
 
       {usesDuration ? (
-        <CommitField
-          value={durationInput(set.target_duration_s)}
-          commit={(text) => {
-            const seconds = parseDuration(text);
-            if (seconds === null || (seconds ?? 0) > 86400) return false;
+        <TimerField
+          seconds={set.target_duration_s}
+          commit={(seconds) => {
+            if ((seconds ?? 0) > 86400) return false;
             onChange({ target_duration_s: seconds });
             return true;
           }}
           placeholder="m:ss"
           accessibilityLabel={a11y("Target time")}
-          keyboardType="numbers-and-punctuation"
           style={styles.setField}
         />
       ) : null}

@@ -1,5 +1,8 @@
 import {
   durationInput,
+  formatTimerDigits,
+  timerDigits,
+  timerSeconds,
   formatRepRange,
   parseDecimal,
   parseDuration,
@@ -50,5 +53,27 @@ describe("parse", () => {
     expect(durationInput(45)).toBe("0:45");
     expect(durationInput(3725)).toBe("1:02:05");
     expect(durationInput(undefined)).toBe("");
+  });
+});
+
+describe("phone-timer entry", () => {
+  it("fills from the right as you type", () => {
+    expect(["2", "20", "200"].map(formatTimerDigits)).toEqual(["0:02", "0:20", "2:00"]);
+    expect(formatTimerDigits("1000")).toBe("10:00");
+    expect(formatTimerDigits("13000")).toBe("1:30:00");
+  });
+
+  it("reads digits from what the field shows, dropping leading zeros", () => {
+    expect(timerDigits("0:005")).toBe("5");
+    expect(timerDigits("2:0")).toBe("20"); // backspace on 2:00
+    expect(timerDigits("1234567")).toBe("123456");
+  });
+
+  it("turns digits into seconds", () => {
+    expect(timerSeconds("200")).toBe(120);
+    expect(timerSeconds("1000")).toBe(600);
+    expect(timerSeconds("90")).toBe(90);
+    expect(timerSeconds("13000")).toBe(5400);
+    expect(timerSeconds("")).toBeUndefined();
   });
 });

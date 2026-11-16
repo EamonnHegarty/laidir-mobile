@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ProgressBar } from "@/components/glas";
 import { Icon } from "@/components/icon";
@@ -9,10 +9,11 @@ import { useTheme } from "@/hooks/use-theme";
 import { restOver } from "@/lib/haptics";
 import { formatDuration } from "@/lib/units";
 
-import { restTimer, useRestTimer } from "./rest-timer";
+import { restAlertMode, restAlertScheduled } from "./rest-alert";
+import { restTimer, type RestTimer, useRestTimer } from "./rest-timer";
 
 /** The current time, refreshed every `ms` while mounted (read from state, so renders stay pure). */
-function useNow(ms: number): number {
+export function useNow(ms: number): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), ms);
@@ -32,38 +33,107 @@ export function ElapsedTime({ startedAt }: { startedAt: string }) {
   );
 }
 
-/**
- * Countdown bar shown while resting. Vibrates when the rest is over (while the app is open; a
- * notification when it's in the background needs a native module, so it isn't in v1).
- */
-export function RestBar() {
+/** Whole seconds left on the rest timer, refreshed four times a second; 0 when not resting. */
+export function useRestLeft(): { timer: RestTimer; left: number } {
   const timer = useRestTimer();
-  const theme = useTheme();
   const now = useNow(250);
-  const left = timer ? Math.max(0, Math.ceil((timer.endsAt - now) / 1000)) : 0;
+  return { timer, left: timer ? Math.max(0, Math.ceil((timer.endsAt - now) / 1000)) : 0 };
+}
 
+/**
+ * Stops the rest timer when it runs out, wherever you are in the app, and vibrates if no "Rest over"
+ * notification is doing it (no notification permission). Mounted once, in the root layout.
+ */
+export function RestWatcher() {
+  const { timer, left } = useRestLeft();
   useEffect(() => {
     if (timer && left === 0) {
+      // Check before stopping: stopping cancels (and forgets) the notification.
+      const notified = restAlertScheduled();
+      const mode = restAlertMode();
       restTimer.stop();
-      restOver();
+      if (!notified && (mode === "both" || mode === "vibrate")) restOver();
     }
   }, [timer, left]);
+  return null;
+}
+
+/**
+ * The rest countdown, floating over the workout as a card: −15, +15, Skip, and a button that
+ * shrinks it to a small countdown pill (tap the pill to bring the card back). Each new rest opens
+ * as a card again.
+ */
+export function RestOverlay() {
+  const { timer, left } = useRestLeft();
+  const theme = useTheme();
+  const [minimisedRun, setMinimisedRun] = useState<number | null>(null);
 
   if (!timer || left === 0) return null;
   const progress = Math.min(1, left / timer.total);
 
-  return (
-    <View style={[styles.bar, { backgroundColor: theme.backgroundElement }]}>
-      <View style={styles.barTop}>
-        <Icon name="hourglass_top" size={22} color={theme.tint} />
-        <Label size="heading" style={styles.time} accessibilityLiveRegion="polite">
-          Rest {formatDuration(left)}
-        </Label>
-        <BarButton label="−15" a11y="Rest 15 seconds less" onPress={() => restTimer.adjust(-15)} />
-        <BarButton label="+15" a11y="Rest 15 seconds more" onPress={() => restTimer.adjust(15)} />
-        <BarButton label="Skip" a11y="Skip rest" onPress={() => restTimer.stop()} />
+  if (minimisedRun === timer.run) {
+    return (
+      <View style={styles.pillWrap} pointerEvents="box-none">
+        <Pressable
+          onPress={() => setMinimisedRun(null)}
+          accessibilityRole="button"
+          accessibilityLabel={`Rest ${formatDuration(left)} left. Show rest timer`}
+          style={({ pressed }) => [
+            styles.pill,
+            styles.shadow,
+            { backgroundColor: theme.tint, opacity: pressed ? 0.8 : 1 },
+          ]}
+        >
+          <Icon name="hourglass_top" size={18} color={theme.onTint} />
+          <Text style={[styles.pillText, { color: theme.onTint }]}>{formatDuration(left)}</Text>
+        </Pressable>
       </View>
-      <ProgressBar progress={progress} />
+    );
+  }
+
+  return (
+    <View style={styles.cardWrap} pointerEvents="box-none">
+      <View
+        style={[
+          styles.card,
+          styles.shadow,
+          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        ]}
+      >
+        <View style={styles.cardTop}>
+          <Icon name="hourglass_top" size={22} color={theme.tint} />
+          <Text
+            style={[styles.time, { color: theme.text }]}
+            accessibilityLiveRegion="polite"
+            accessibilityLabel={`Rest ${formatDuration(left)} left`}
+          >
+            {formatDuration(left)}
+          </Text>
+          <Pressable
+            onPress={() => setMinimisedRun(timer.run)}
+            accessibilityRole="button"
+            accessibilityLabel="Minimise rest timer"
+            hitSlop={10}
+            style={({ pressed }) => [styles.minimise, pressed && { opacity: 0.5 }]}
+          >
+            <Icon name="close_fullscreen" size={20} />
+          </Pressable>
+        </View>
+        <ProgressBar progress={progress} />
+        <View style={styles.buttons}>
+          <CardButton
+            label="−15"
+            a11y="Rest 15 seconds less"
+            onPress={() => restTimer.adjust(-15)}
+          />
+          <CardButton
+            label="+15"
+            a11y="Rest 15 seconds more"
+            onPress={() => restTimer.adjust(15)}
+          />
+          <CardButton label="Skip" a11y="Skip rest" filled onPress={() => restTimer.stop()} />
+        </View>
+      </View>
     </View>
   );
 }
@@ -88,32 +158,77 @@ export function FinishButton({ onPress }: { onPress: () => void }) {
   );
 }
 
-function BarButton({ label, a11y, onPress }: { label: string; a11y: string; onPress: () => void }) {
+function CardButton({
+  label,
+  a11y,
+  filled = false,
+  onPress,
+}: {
+  label: string;
+  a11y: string;
+  filled?: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={a11y}
-      hitSlop={8}
-      style={styles.button}
+      style={({ pressed }) => [
+        styles.cardButton,
+        { backgroundColor: filled ? theme.tint : theme.control, opacity: pressed ? 0.7 : 1 },
+      ]}
     >
-      <Label tone="tint" size="heading">
+      <Text style={[styles.cardButtonText, { color: filled ? theme.onTint : theme.text }]}>
         {label}
-      </Label>
+      </Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: {
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.three - 4,
-    paddingBottom: Spacing.three,
+  cardWrap: {
+    position: "absolute",
+    left: Spacing.three,
+    right: Spacing.three,
+    bottom: Spacing.three,
   },
-  barTop: { flexDirection: "row", alignItems: "center", gap: Spacing.three },
-  time: { flex: 1 },
+  card: {
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: Spacing.three,
+    gap: Spacing.three - 4,
+  },
+  shadow: {
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  cardTop: { flexDirection: "row", alignItems: "center", gap: Spacing.two },
+  time: { flex: 1, fontSize: 28, fontWeight: 700, fontVariant: ["tabular-nums"] },
+  minimise: { padding: Spacing.one },
+  buttons: { flexDirection: "row", gap: Spacing.two },
+  cardButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+    paddingVertical: 12,
+  },
+  cardButtonText: { fontSize: 16, fontWeight: 600 },
+  pillWrap: { position: "absolute", right: Spacing.three, bottom: Spacing.three },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  pillText: { fontSize: 16, fontWeight: 700, fontVariant: ["tabular-nums"] },
   finish: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 },
   finishText: { fontWeight: 600 },
-  button: { paddingHorizontal: Spacing.one },
 });

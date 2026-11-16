@@ -80,7 +80,7 @@ export function LogSetRow({
             }
             accessibilityLabel={a11y(`Weight in ${units.weight_unit}`)}
             keyboardType="decimal-pad"
-            style={styles.field}
+            style={[styles.field, { backgroundColor: theme.control }]}
           />
         );
       case "reps":
@@ -97,7 +97,7 @@ export function LogSetRow({
             placeholder={hint.reps === undefined ? "reps" : String(hint.reps)}
             accessibilityLabel={a11y("Reps")}
             keyboardType="number-pad"
-            style={styles.field}
+            style={[styles.field, { backgroundColor: theme.control }]}
           />
         );
       case "duration_s":
@@ -114,7 +114,7 @@ export function LogSetRow({
             placeholder={hint.duration_s === undefined ? "m:ss" : durationInput(hint.duration_s)}
             accessibilityLabel={a11y("Time")}
             keyboardType="numbers-and-punctuation"
-            style={styles.field}
+            style={[styles.field, { backgroundColor: theme.control }]}
           />
         );
       case "distance_m":
@@ -141,7 +141,7 @@ export function LogSetRow({
             }
             accessibilityLabel={a11y(distanceInMetres ? "Distance in metres" : "Distance in miles")}
             keyboardType="decimal-pad"
-            style={styles.field}
+            style={[styles.field, { backgroundColor: theme.control }]}
           />
         );
     }
@@ -152,6 +152,10 @@ export function LogSetRow({
       friction={1.5}
       rightThreshold={SWIPE_TO_DELETE}
       overshootRight={false}
+      // Only a clear sideways drag to the left starts a swipe, so flicking the page up or down
+      // never gets caught by a row (there is nothing to swipe to the right).
+      dragOffsetFromRight={-24}
+      dragOffsetFromLeft={10_000}
       onSwipeableOpen={onRemove}
       renderRightActions={() => (
         <View style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
@@ -197,7 +201,7 @@ export function LogSetRow({
           accessibilityState={{ checked: set.completed }}
           accessibilityLabel={a11y("Done")}
           hitSlop={6}
-          style={[styles.tick, { backgroundColor: set.completed ? theme.success : theme.border }]}
+          style={[styles.tick, { backgroundColor: set.completed ? theme.success : theme.control }]}
         >
           <Icon name="check" size={22} color={set.completed ? theme.onTint : theme.textSecondary} />
         </Pressable>

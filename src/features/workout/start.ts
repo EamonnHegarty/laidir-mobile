@@ -5,7 +5,7 @@ import type { Repositories } from "@/data/index";
 
 import { prepareRestAlerts } from "./rest-alert";
 import { restTimer } from "./rest-timer";
-import { defaultSessionName, sessionFromRoutine } from "./session";
+import { defaultSessionName, sessionFromRoutine, withNotes } from "./session";
 
 /**
  * Starts a session (empty, or from a workout template) and opens it. If one is already in progress,
@@ -19,11 +19,19 @@ export async function startSession(
   const begin = async () => {
     restTimer.stop();
     void prepareRestAlerts();
-    await repos.workouts.start(
-      routine
-        ? { name: routine.name, routine_id: routine.id, exercises: sessionFromRoutine(routine) }
-        : { name: defaultSessionName(new Date()) },
-    );
+    let input: Parameters<typeof repos.workouts.start>[0] = {
+      name: defaultSessionName(new Date()),
+    };
+    if (routine) {
+      const exercises = sessionFromRoutine(routine);
+      const notes = await repos.workouts.lastNotes(exercises.map((e) => e.exercise_id));
+      input = {
+        name: routine.name,
+        routine_id: routine.id,
+        exercises: withNotes(exercises, notes),
+      };
+    }
+    await repos.workouts.start(input);
     openActive();
   };
 

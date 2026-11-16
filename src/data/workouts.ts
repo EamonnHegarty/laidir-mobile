@@ -214,6 +214,33 @@ export function workoutsRepo({ db, clock, newId }: Deps) {
     },
 
     /**
+     * Each exercise's note from the most recent finished workout that included it ("seat on 4"),
+     * so a note carries over to the next session. An exercise whose latest session had no note
+     * has none (removing a note sticks).
+     */
+    async lastNotes(refs: readonly ExerciseRef[]): Promise<Map<ExerciseRef, string>> {
+      const wanted = new Set(refs);
+      const seen = new Set<ExerciseRef>();
+      const notes = new Map<ExerciseRef, string>();
+      if (wanted.size === 0) return notes;
+      const rows = await db.all<{ doc: string }>(
+        `SELECT doc FROM workouts WHERE deleted_at IS NULL AND ended_at IS NOT NULL
+         ORDER BY started_at DESC LIMIT 200`,
+      );
+      for (const row of rows) {
+        const workout = JSON.parse(row.doc) as Workout;
+        for (const exercise of workout.exercises) {
+          const ref = exercise.exercise_id;
+          if (!wanted.has(ref) || seen.has(ref)) continue;
+          seen.add(ref);
+          if (exercise.notes) notes.set(ref, exercise.notes);
+        }
+        if (seen.size === wanted.size) break;
+      }
+      return notes;
+    },
+
+    /**
      * Sets of the most recent finished workout that included this exercise, in order. Drives the
      * "previous" column when logging.
      */

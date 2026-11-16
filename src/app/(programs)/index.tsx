@@ -13,6 +13,7 @@ import { useLiveQuery, useRepositories } from "@/data/database-provider";
 import { formatHours, formatTotalWeight } from "@/features/stats/format";
 import { nextUpByFolder } from "@/features/stats/model";
 import { summarise } from "@/features/workout/session";
+import { restTimer } from "@/features/workout/rest-timer";
 import { startSession } from "@/features/workout/start";
 import { ElapsedTime } from "@/features/workout/timers";
 import { useTheme } from "@/hooks/use-theme";
@@ -142,7 +143,27 @@ export default function ProgramsScreen() {
       {header}
       <ScrollView contentContainerStyle={styles.content}>
         {active ? (
-          <ResumeBanner workout={active} onPress={openActive} />
+          <ResumeBanner
+            workout={active}
+            onPress={openActive}
+            onDiscard={() =>
+              Alert.alert(
+                "Discard workout?",
+                `Everything logged in ${active.name} is thrown away.`,
+                [
+                  { text: "Keep it", style: "cancel" },
+                  {
+                    text: "Discard",
+                    style: "destructive",
+                    onPress: () => {
+                      restTimer.stop();
+                      void repos.workouts.remove(active.id);
+                    },
+                  },
+                ],
+              )
+            }
+          />
         ) : (
           <>
             {justFinished ? (
@@ -239,7 +260,19 @@ export default function ProgramsScreen() {
   );
 }
 
-function ResumeBanner({ workout, onPress }: { workout: Workout; onPress: () => void }) {
+/**
+ * The workout in progress (also after the app was closed or killed: it's saved as you go and the
+ * clock runs from when it started). Tap to resume; the bin discards it.
+ */
+function ResumeBanner({
+  workout,
+  onPress,
+  onDiscard,
+}: {
+  workout: Workout;
+  onPress: () => void;
+  onDiscard: () => void;
+}) {
   const theme = useTheme();
   const { completedSets } = summarise(workout.exercises);
   const total = workout.exercises.reduce((n, e) => n + e.sets.length, 0);
@@ -253,7 +286,10 @@ function ResumeBanner({ workout, onPress }: { workout: Workout; onPress: () => v
       <Icon name="play_arrow" size={28} color={theme.tint} />
       <View style={styles.flex}>
         <Label tone="tint" size="heading" numberOfLines={1}>
-          {workout.name} in progress
+          {workout.name}
+        </Label>
+        <Label tone="secondary" size="small">
+          Unfinished workout
         </Label>
         <View style={styles.bannerMeta}>
           <ElapsedTime startedAt={workout.started_at} />
@@ -262,6 +298,7 @@ function ResumeBanner({ workout, onPress }: { workout: Workout; onPress: () => v
           </Label>
         </View>
       </View>
+      <IconAction icon="delete" label={`Discard ${workout.name}`} onPress={onDiscard} />
       <View style={[styles.resume, { backgroundColor: theme.tint }]}>
         <Label style={{ color: theme.onTint }} size="small">
           Resume
