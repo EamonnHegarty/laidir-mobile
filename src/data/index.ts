@@ -4,6 +4,7 @@ import { exercisesRepo } from "./exercises";
 import { routinesRepo } from "./routines";
 import { settingsRepo } from "./settings";
 import { statsRepo } from "./stats";
+import { syncRepo } from "./sync";
 import { workoutsRepo } from "./workouts";
 
 export function createRepositories(deps: Deps) {
@@ -14,6 +15,7 @@ export function createRepositories(deps: Deps) {
     settings: settingsRepo(deps),
     stats: statsRepo(deps),
     backup: backupRepo(deps),
+    sync: syncRepo(deps),
   };
 }
 

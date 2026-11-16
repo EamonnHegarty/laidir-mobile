@@ -66,7 +66,7 @@ export const fromSetLogRow = (row: SetLogRow): LoggedSet =>
  * Keeps set_log in step with a workout: its rows are replaced on every write, and only finished,
  * live workouts have any.
  */
-async function rebuildSetLog(tx: Db, workout: Workout): Promise<void> {
+export async function rebuildSetLog(tx: Db, workout: Workout): Promise<void> {
   await tx.run("DELETE FROM set_log WHERE workout_id = ?", [workout.id]);
   if (workout.deleted_at !== null || workout.ended_at === undefined) return;
   for (const [exerciseIndex, exercise] of workout.exercises.entries()) {

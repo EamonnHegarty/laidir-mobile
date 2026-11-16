@@ -50,9 +50,14 @@ function specOf<T extends Entity>(doc: T): SpecFor<T> {
  * Inserts or replaces an item. The doc is stored exactly as given (JSON drops undefined, so optional
  * fields stay absent, never null) and the row is marked dirty for the next sync push.
  */
-export async function writeEntity<T extends Entity>(db: Db, doc: T): Promise<void> {
+export async function writeEntity<T extends Entity>(
+  db: Db,
+  doc: T,
+  { dirty = true }: { dirty?: boolean } = {},
+): Promise<void> {
   const { table, columns } = specOf(doc);
-  const cols = { ...columns(doc), dirty: 1, doc: JSON.stringify(doc) };
+  // Local edits are dirty (to push); items written by sync from the server are clean.
+  const cols = { ...columns(doc), dirty: dirty ? 1 : 0, doc: JSON.stringify(doc) };
   const names = Object.keys(cols);
   const placeholders = names.map(() => "?").join(", ");
   const updates = names

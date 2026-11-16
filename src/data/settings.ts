@@ -7,8 +7,10 @@ import {
   isAppearance,
 } from "@/constants/theme";
 
+import type { Clock } from "./clock";
 import type { Profile } from "./contract";
 import type { Db } from "./db";
+import { touchProfile } from "./profile-meta";
 
 /**
  * Local preferences. They use Profile's field names and values so that at first login (phase 3)
@@ -29,7 +31,11 @@ export const DEFAULT_SETTINGS: Settings = {
 
 const KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[];
 
-export function settingsRepo({ db }: { db: Db }) {
+/**
+ * Writes to Profile fields (units, default rest, display name, per-exercise rest) also mark the
+ * Profile changed for sync once an account exists (touchProfile). `local_` keys never do.
+ */
+export function settingsRepo({ db, clock }: { db: Db; clock: Clock }) {
   return {
     async get(): Promise<Settings> {
       const rows = await db.all<{ key: string; value: string }>("SELECT key, value FROM settings");
@@ -40,6 +46,7 @@ export function settingsRepo({ db }: { db: Db }) {
 
     async update(changes: Partial<Settings>): Promise<Settings> {
       await db.transaction(async (tx) => {
+        let changed = false;
         for (const key of KEYS) {
           const value = changes[key];
           if (value === undefined) continue;
@@ -47,7 +54,9 @@ export function settingsRepo({ db }: { db: Db }) {
             "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
             [key, JSON.stringify(value)],
           );
+          changed = true;
         }
+        if (changed) await touchProfile(tx, clock);
       });
       return this.get();
     },
@@ -72,17 +81,20 @@ export function settingsRepo({ db }: { db: Db }) {
     /** Sets the display name (trimmed, 1–50 characters); empty or `null` clears it. */
     async setDisplayName(name: string | null): Promise<void> {
       const trimmed = name?.trim() ?? "";
-      if (trimmed === "") {
-        await db.run("DELETE FROM settings WHERE key = ?", [NAME_KEY]);
-        return;
-      }
       if ([...trimmed].length > MAX_NAME) {
         throw new RangeError(`A name can be at most ${MAX_NAME} characters`);
       }
-      await db.run(
-        "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
-        [NAME_KEY, JSON.stringify(trimmed)],
-      );
+      await db.transaction(async (tx) => {
+        if (trimmed === "") {
+          await tx.run("DELETE FROM settings WHERE key = ?", [NAME_KEY]);
+        } else {
+          await tx.run(
+            "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+            [NAME_KEY, JSON.stringify(trimmed)],
+          );
+        }
+        await touchProfile(tx, clock);
+      });
     },
 
     /**
@@ -138,6 +150,15 @@ export function settingsRepo({ db }: { db: Db }) {
       await writeLocal(db, REMINDER_KEY, on);
     },
 
+    /** Whether the one-time "allow exact rest alerts" prompt has been shown. Device-only. */
+    async exactAlarmAsked(): Promise<boolean> {
+      return (await readLocal(db, EXACT_ALARM_ASKED_KEY)) === true;
+    },
+
+    async setExactAlarmAsked(): Promise<void> {
+      await writeLocal(db, EXACT_ALARM_ASKED_KEY, true);
+    },
+
     /** Remembers the rest for one exercise; `null` goes back to the template/default. */
     async setExerciseRest(ref: string, seconds: number | null): Promise<void> {
       if (seconds !== null && (!Number.isInteger(seconds) || seconds < 0 || seconds > MAX_REST)) {
@@ -156,6 +177,7 @@ export function settingsRepo({ db }: { db: Db }) {
           "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
           [REST_KEY, JSON.stringify(map)],
         );
+        await touchProfile(tx, clock);
       });
     },
   };
@@ -172,6 +194,7 @@ const MAX_NAME = 50;
 const APPEARANCE_KEY = "local_appearance";
 const REST_ALERT_KEY = "local_rest_alert";
 const REMINDER_KEY = "local_workout_reminder";
+const EXACT_ALARM_ASKED_KEY = "local_exact_alarm_asked";
 
 export const REST_ALERTS = ["both", "sound", "vibrate", "silent"] as const;
 export type RestAlert = (typeof REST_ALERTS)[number];
