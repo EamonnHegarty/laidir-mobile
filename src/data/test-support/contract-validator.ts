@@ -18,7 +18,8 @@ for (const file of readdirSync(schemaDir)) ajv.addSchema(readJson(join(schemaDir
 const catalogueSchema = readJson(join(contractDir, "catalogue/v1/exercises.schema.json"));
 ajv.addSchema(catalogueSchema);
 
-const schemaIdFor: Record<Entity["type"], string> = {
+const schemaIdFor: Record<Entity["type"] | "PROFILE", string> = {
+  PROFILE: "Profile.json",
   EXERCISE: "Exercise.json",
   ROUTINE_FOLDER: "RoutineFolder.json",
   ROUTINE: "Routine.json",

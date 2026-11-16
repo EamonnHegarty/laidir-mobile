@@ -66,6 +66,11 @@ export function useRepositories(): Repositories {
   return useDataContext().repositories;
 }
 
+/** The change feed: notified after every committed write (sync uses it to push edits soon). */
+export function useChangeFeed(): ChangeFeed {
+  return useDataContext().changes;
+}
+
 export type LiveQuery<T> =
   | { status: "loading"; data: undefined; error: undefined }
   | { status: "ready"; data: T; error: undefined }
