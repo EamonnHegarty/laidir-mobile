@@ -8,16 +8,19 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { DEFAULT_ACCENT } from "@/constants/theme";
 import { DatabaseProvider, useLiveQuery } from "@/data/database-provider";
 import { WorkoutBackground } from "@/features/workout/background";
+import { SyncProvider } from "@/sync/sync-provider";
 import { AccentContext, useTheme } from "@/hooks/use-theme";
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <DatabaseProvider>
-        <AccentProvider>
-          <ThemedTabs />
-          <WorkoutBackground />
-        </AccentProvider>
+        <SyncProvider>
+          <AccentProvider>
+            <ThemedTabs />
+            <WorkoutBackground />
+          </AccentProvider>
+        </SyncProvider>
       </DatabaseProvider>
     </GestureHandlerRootView>
   );

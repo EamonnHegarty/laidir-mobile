@@ -11,7 +11,9 @@ import { CATALOGUE_VERSION } from "@/data/catalogue";
 import { useLiveQuery, useRepositories } from "@/data/database-provider";
 import { type RestAlert, REST_ALERTS, type Settings } from "@/data/settings";
 import { AccentPicker } from "@/features/settings/accent-picker";
+import { AccountSection } from "@/features/settings/account-section";
 import { shareBackup } from "@/features/settings/backup";
+import { ExactAlarmRow } from "@/features/settings/exact-alarm-row";
 import { formatDuration } from "@/lib/units";
 
 import contract from "../../../contract.json";
@@ -63,6 +65,8 @@ export default function SettingsScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <AccountSection />
+
         <SectionHeader>Profile</SectionHeader>
         <View style={styles.pad}>
           <CommitField
@@ -153,6 +157,9 @@ export default function SettingsScreen() {
             />
           ))}
         </Choice>
+        <RowGroup style={styles.group}>
+          <ExactAlarmRow />
+        </RowGroup>
         <Label tone="secondary" size="small" style={styles.note}>
           Rings with the screen locked or the app in the background too. Each exercise&apos;s rest
           is set from the timer chip on its card during a workout.
@@ -205,7 +212,8 @@ export default function SettingsScreen() {
           />
         </RowGroup>
         <Label tone="secondary" size="small" style={styles.note}>
-          Everything is stored on this phone. Backup and sync across devices come later.
+          Everything is stored on this phone first. Signed in, it also backs up to Láidir&apos;s
+          servers in the EU (Ireland).
         </Label>
       </ScrollView>
     </Screen>

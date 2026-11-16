@@ -37,6 +37,25 @@ Rules from the contract that the app relies on: deleted items are tombstones (`d
 history keeps a deleted custom exercise's name; deleting a routine folder unfiles its routines; a `folder_id` that
 points at a missing or deleted folder counts as unfiled; weights are stored in kg at full precision.
 
+## Back up & sync (optional)
+
+Signing in is optional: without an account everything stays on the phone. Settings → **Back up & sync** opens
+Cognito's sign-in page in the system browser (authorization code + PKCE, [`src/auth/`](src/auth)); tokens live in
+`expo-secure-store` and the access token is refreshed through `/oauth2/token` (refresh tokens rotate).
+
+| Path                                                 | What                                                                                         |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [`src/data/sync.ts`](src/data/sync.ts)               | Local side: account link, dirty items, applying pulled items (last writer wins), the Profile |
+| [`src/data/sync-engine.ts`](src/data/sync-engine.ts) | One sync: push dirty items (≤ 25 per request), then pull pages from the stored cursor        |
+| [`src/sync/`](src/sync)                              | API client, controller (when to sync, backoff) and the React provider                        |
+
+- Sync runs at start, when the app returns to the foreground, 20 s after the last local edit, and on "Sync now".
+- At first sign-in the settings become the account's Profile (keys starting `local_` stay on the phone). If the
+  account already has a Profile (another phone), that one wins.
+- The phone's data belongs to the first account that signs in on it; another account must erase it first.
+- Tests run the engine against real SQLite and an in-memory server with the API's rules
+  ([`fake-server.ts`](src/data/test-support/fake-server.ts)).
+
 ## Develop
 
 Requires Node ≥ 24.3 (see `.node-version`) and pnpm.
@@ -62,6 +81,21 @@ Two app variants, chosen by `APP_VARIANT` in [`eas.json`](eas.json) and [`app.co
 pnpm build:dev       # npx eas-cli@27.10.0 build --platform android --profile development
 pnpm build:preview   # npx eas-cli@27.10.0 build --platform android --profile preview
 ```
+
+The dev client uses the URL scheme `laidir-dev` and the preview app `laidir`, so Cognito's
+`laidir://auth/callback` redirect always opens the real app.
+
+### Over-the-air updates (EAS Update)
+
+Preview builds include `expo-updates` (channel `preview`, runtime version from the native fingerprint). A JS-only
+change reaches the installed app without a new build; it downloads on the next launch and applies on the one after:
+
+```bash
+npx eas-cli@27.10.0 update --channel preview --environment preview --message "what changed"
+```
+
+Anything that changes native code (a new native module, permissions, plugins) changes the fingerprint, so it needs
+a new build; updates never reach a build they aren't compatible with.
 
 Open the build link on the phone, download the APK and allow installs from that source. On Samsung, **Auto Blocker**
 (Settings → Security and privacy) must be off to sideload. EAS keeps the signing key, so new APKs install over old ones.
