@@ -5,6 +5,8 @@ import { RepositoriesProvider } from "@/data/database-provider";
 import type { Repositories } from "@/data/index";
 import { createChangeFeed } from "@/data/live";
 import { DEFAULT_SETTINGS, type Settings } from "@/data/settings";
+import type { SyncController } from "@/sync/controller";
+import { SyncControllerProvider } from "@/sync/sync-provider";
 
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
 jest.mock("expo-file-system", () => ({}));
@@ -51,14 +53,39 @@ function fakeRepositories() {
   };
 }
 
+/** A signed-out sync controller whose sign-in is recorded. */
+function fakeSync() {
+  const signIn = jest.fn(async () => undefined);
+  const state = { kind: "signed-out" } as const; // stable, like the real controller's
+  const controller = {
+    getState: () => state,
+    subscribe: () => () => undefined,
+    signIn,
+  } as unknown as SyncController;
+  return { controller, signIn };
+}
+
+function renderSettings(fake: ReturnType<typeof fakeRepositories>, sync = fakeSync()) {
+  return render(
+    <RepositoriesProvider value={fake.value}>
+      <SyncControllerProvider controller={sync.controller}>
+        <SettingsScreen />
+      </SyncControllerProvider>
+    </RepositoriesProvider>,
+  );
+}
+
 describe("Settings screen", () => {
+  it("offers optional sign-in to back up", async () => {
+    const sync = fakeSync();
+    await renderSettings(fakeRepositories(), sync);
+    await fireEvent.press(await screen.findByRole("button", { name: /Sign in to back up/ }));
+    expect(sync.signIn).toHaveBeenCalled();
+  });
+
   it("switches units, default rest and display name, and saves them", async () => {
     const fake = fakeRepositories();
-    await render(
-      <RepositoriesProvider value={fake.value}>
-        <SettingsScreen />
-      </RepositoriesProvider>,
-    );
+    await renderSettings(fake);
 
     const kg = await screen.findByRole("button", { name: "Kilograms (kg)" });
     expect(kg).toBeSelected();
