@@ -55,3 +55,30 @@ export function durationInput(seconds: number | undefined): string {
   const ss = String(s).padStart(2, "0");
   return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 }
+
+/**
+ * Phone-timer entry: digits fill from the right, so "200" is 2:00 and "1000" is 10:00. Two digits
+ * are seconds, the next two minutes, anything before that hours. Leading zeros are dropped and
+ * at most 6 digits are kept.
+ */
+export function timerDigits(text: string): string {
+  return text.replace(/\D/g, "").replace(/^0+/, "").slice(0, 6);
+}
+
+/** "200" → "2:00", "5" → "0:05", "13000" → "1:30:00" (as typed, not normalised). */
+export function formatTimerDigits(digits: string): string {
+  const padded = digits.padStart(3, "0");
+  const ss = padded.slice(-2);
+  const rest = padded.slice(0, -2);
+  if (rest.length <= 2) return `${Number(rest)}:${ss}`;
+  return `${Number(rest.slice(0, -2))}:${rest.slice(-2)}:${ss}`;
+}
+
+/** Seconds for typed timer digits ("130" → 90, "90" → 90); undefined when empty. */
+export function timerSeconds(digits: string): number | undefined {
+  if (digits === "") return undefined;
+  const padded = digits.padStart(6, "0");
+  return (
+    Number(padded.slice(0, 2)) * 3600 + Number(padded.slice(2, 4)) * 60 + Number(padded.slice(4))
+  );
+}

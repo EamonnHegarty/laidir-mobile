@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { Keyboard, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Keyboard, Pressable, StyleSheet, View } from "react-native";
+// Gesture Handler's ScrollView coordinates with the swipe-to-delete rows, so a quick flick
+// scrolls the page instead of being caught by a row.
+import { ScrollView } from "react-native-gesture-handler";
 
 import { ReorderList, setCount } from "@/components/reorder-list";
 import { DashedButton, IconAction, Pill } from "@/components/glas";
 import { Icon } from "@/components/icon";
-import { Field, IconButton, Label } from "@/components/ui";
+import { Field, Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import { describeExercise } from "@/data/catalogue";
 import type { Exercise, Routine, WorkoutExercise } from "@/data/contract";
@@ -14,16 +17,19 @@ import { formatSet } from "@/lib/format-set";
 import { tapConfirm } from "@/lib/haptics";
 import { useTheme } from "@/hooks/use-theme";
 
+import { ExerciseMenu } from "./exercise-menu";
 import { RestPicker, restLabel } from "./rest-picker";
 import { restTimer } from "./rest-timer";
 import {
   addSet,
   MAX_EXERCISES,
+  MAX_NOTE,
   MAX_SETS,
   moveExercise,
   removeExercise,
   removeSet,
   setHints,
+  setNote,
   templateFor,
   toggleComplete,
   updateSet,
@@ -45,8 +51,8 @@ export type SessionEditorProps = {
   exerciseRest?: ReadonlyMap<string, number>;
   onExerciseRest?: (ref: string, seconds: number | null) => void;
   onAddExercises: () => void;
-  /** Shows a history button on each exercise (the live session opens its past sessions). */
-  onShowHistory?: (ref: string) => void;
+  /** Tapping an exercise's name opens its details (history, records, charts). */
+  onShowExercise?: (ref: string) => void;
   /** Shown as a Discard button at the bottom when given (the live session). */
   onDiscard?: () => void;
   /** Live session: ticking a set vibrates and starts the rest timer. Off when editing history. */
@@ -56,7 +62,8 @@ export type SessionEditorProps = {
 
 /**
  * The body of the in-progress workout: name, the Workout's notes, exercises with their sets, add
- * exercises, discard. Long-press an exercise name to drag the exercises into a new order.
+ * exercises, discard. Tap an exercise's name for its details; long-press it (or use its ⋮ menu) to
+ * drag the exercises into a new order. Every exercise stays open.
  */
 export function SessionEditor(props: SessionEditorProps) {
   const [reordering, setReordering] = useState(false);
@@ -91,7 +98,7 @@ function SessionBody({
   exerciseRest,
   onExerciseRest,
   onAddExercises,
-  onShowHistory,
+  onShowExercise,
   onDiscard,
   live = true,
   header,
@@ -99,18 +106,9 @@ function SessionBody({
 }: SessionEditorProps & { onReorder: () => void }) {
   const theme = useTheme();
   const [restFor, setRestFor] = useState<number | null>(null);
-  // Exercise index → opened (true) or folded (false) by tapping its header.
-  const [toggled, setToggled] = useState<ReadonlyMap<number, boolean>>(new Map());
-  // In a live session, exercises after the one you're on fold to one line until you get to them.
-  const current = exercises.findIndex((e) => e.sets.some((set) => !set.completed));
-  const folded = (index: number) =>
-    toggled.get(index) === undefined
-      ? live &&
-        current >= 0 &&
-        index > current &&
-        !exercises[index]!.sets.some((set) => set.completed)
-      : !toggled.get(index);
-  const toggleFold = (index: number) => setToggled((cur) => new Map(cur).set(index, folded(index)));
+  const [menuFor, setMenuFor] = useState<number | null>(null);
+  // The exercise whose note is being written (shown as a field until you leave it).
+  const [noteFor, setNoteFor] = useState<number | null>(null);
   const notes = routine?.notes;
 
   const restOf = (exercise: WorkoutExercise, index: number) => {
@@ -119,9 +117,12 @@ function SessionBody({
     const chosen = exerciseRest?.get(exercise.exercise_id);
     return { seconds: chosen ?? fallback, chosen: chosen !== undefined, fallback };
   };
+  const nameOf = (exercise: WorkoutExercise) =>
+    describeExercise(exercise.exercise_id, customExercises.get(exercise.exercise_id)).name;
 
   const editing = restFor === null ? undefined : exercises[restFor];
   const editingRest = editing && restFor !== null ? restOf(editing, restFor) : undefined;
+  const menuExercise = menuFor === null ? undefined : exercises[menuFor];
 
   return (
     <ScrollView
@@ -157,29 +158,6 @@ function SessionBody({
         const hints = setHints(exercise.sets, last, template);
         const rest = restOf(exercise, index).seconds;
         let working = 0;
-        const done = exercise.sets.filter((set) => set.completed).length;
-
-        if (folded(index)) {
-          return (
-            <Pressable
-              key={`${exercise.exercise_id}-${index}`}
-              onPress={() => toggleFold(index)}
-              onLongPress={exercises.length > 1 ? onReorder : undefined}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: false }}
-              accessibilityLabel={`${info.name}, ${done} of ${exercise.sets.length} sets. Show sets`}
-              style={[styles.card, styles.foldedCard, { backgroundColor: theme.backgroundElement }]}
-            >
-              <Label size="heading" style={[styles.flex, { color: theme.tint }]} numberOfLines={1}>
-                {info.name}
-              </Label>
-              <Label tone="secondary" size="small">
-                {done} / {exercise.sets.length} sets
-              </Label>
-              <Icon name="expand_more" />
-            </Pressable>
-          );
-        }
 
         return (
           <View
@@ -188,14 +166,18 @@ function SessionBody({
           >
             <View style={styles.cardHeader}>
               <Pressable
-                style={styles.flex}
-                onPress={() => toggleFold(index)}
-                accessibilityRole="button"
-                accessibilityState={{ expanded: true }}
-                onLongPress={exercises.length > 1 ? onReorder : undefined}
-                accessibilityHint={
-                  exercises.length > 1 ? "Long-press to reorder exercises" : undefined
+                style={({ pressed }) => [styles.flex, pressed && { opacity: 0.6 }]}
+                onPress={
+                  onShowExercise
+                    ? () => {
+                        Keyboard.dismiss();
+                        onShowExercise(exercise.exercise_id);
+                      }
+                    : undefined
                 }
+                accessibilityRole={onShowExercise ? "button" : "header"}
+                onLongPress={exercises.length > 1 ? onReorder : undefined}
+                accessibilityHint={onShowExercise ? "Opens history, records and charts" : undefined}
               >
                 <Label size="heading" style={{ color: theme.tint }}>
                   {info.name}
@@ -209,23 +191,45 @@ function SessionBody({
                   accessibilityLabel={`Rest timer for ${info.name}: ${restLabel(rest)}`}
                 />
               ) : null}
-              {onShowHistory ? (
-                <IconAction
-                  icon="history"
-                  label={`History for ${info.name}`}
-                  size={22}
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    onShowHistory(exercise.exercise_id);
-                  }}
-                />
-              ) : null}
-              <IconButton
-                icon="close"
-                a11y={`Remove ${info.name}`}
-                onPress={() => onExercises((cur) => removeExercise(cur, index))}
+              <IconAction
+                icon="more_vert"
+                label={`More for ${info.name}`}
+                size={22}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setMenuFor(index);
+                }}
               />
             </View>
+
+            {noteFor === index ? (
+              <Field
+                autoFocus
+                defaultValue={exercise.notes ?? ""}
+                placeholder="e.g. seat on 4"
+                accessibilityLabel={`Note for ${info.name}`}
+                maxLength={MAX_NOTE}
+                multiline
+                onEndEditing={(e) => {
+                  const text = e.nativeEvent.text;
+                  onExercises((cur) => setNote(cur, index, text));
+                  setNoteFor(null);
+                }}
+                style={styles.noteField}
+              />
+            ) : exercise.notes ? (
+              <Pressable
+                onPress={() => setNoteFor(index)}
+                accessibilityRole="button"
+                accessibilityLabel={`Note: ${exercise.notes}. Edit note`}
+                style={({ pressed }) => [styles.note, pressed && { opacity: 0.6 }]}
+              >
+                <Icon name="sticky_note_2" size={16} color={theme.tint} />
+                <Label tone="secondary" size="small" style={styles.flex}>
+                  {exercise.notes}
+                </Label>
+              </Pressable>
+            ) : null}
 
             <LogSetHeader tracking={info.tracking} units={settings} />
 
@@ -243,7 +247,9 @@ function SessionBody({
                   units={settings}
                   exerciseName={info.name}
                   onChange={(changes) =>
-                    onExercises((cur) => updateSet(cur, index, setIndex, changes))
+                    onExercises((cur) =>
+                      updateSet(cur, index, setIndex, changes, { fillBelow: live }),
+                    )
                   }
                   onRemove={() => onExercises((cur) => removeSet(cur, index, setIndex))}
                   onToggle={() => {
@@ -295,9 +301,7 @@ function SessionBody({
 
       {editing && editingRest && onExerciseRest ? (
         <RestPicker
-          exerciseName={
-            describeExercise(editing.exercise_id, customExercises.get(editing.exercise_id)).name
-          }
+          exerciseName={nameOf(editing)}
           current={editingRest.seconds}
           chosen={editingRest.chosen}
           fallback={editingRest.fallback}
@@ -305,12 +309,45 @@ function SessionBody({
           onClose={() => setRestFor(null)}
         />
       ) : null}
+
+      {menuExercise && menuFor !== null ? (
+        <ExerciseMenu
+          title={nameOf(menuExercise)}
+          onClose={() => setMenuFor(null)}
+          actions={[
+            {
+              label: menuExercise.notes ? "Edit note" : "Add note",
+              icon: "sticky_note_2",
+              onPress: () => setNoteFor(menuFor),
+            },
+            ...(onShowExercise
+              ? [
+                  {
+                    label: "History and records",
+                    icon: "history" as const,
+                    onPress: () => onShowExercise(menuExercise.exercise_id),
+                  },
+                ]
+              : []),
+            ...(exercises.length > 1
+              ? [{ label: "Reorder exercises", icon: "swap_vert" as const, onPress: onReorder }]
+              : []),
+            {
+              label: "Remove exercise",
+              icon: "delete",
+              danger: true,
+              onPress: () => onExercises((cur) => removeExercise(cur, menuFor)),
+            },
+          ]}
+        />
+      ) : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.five * 3 },
+  // Room at the bottom so the floating rest timer never covers the last set.
+  content: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.five * 6 },
   name: { fontSize: 20, fontWeight: 600 },
   notes: { borderLeftWidth: 3, paddingLeft: Spacing.two, paddingVertical: 2 },
   card: { borderRadius: 12, padding: Spacing.two, gap: 2 },
@@ -320,13 +357,14 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     paddingLeft: Spacing.one,
   },
-  foldedCard: {
+  note: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.two,
-    paddingVertical: 12,
-    paddingHorizontal: Spacing.three - 4,
+    alignItems: "flex-start",
+    gap: Spacing.one + 2,
+    paddingHorizontal: Spacing.one,
+    paddingVertical: Spacing.one,
   },
+  noteField: { fontSize: 14, marginVertical: Spacing.one },
   addSet: {
     flexDirection: "row",
     alignItems: "center",

@@ -219,7 +219,7 @@ export function Pill({
   );
   const style = [
     styles.pill,
-    { backgroundColor: tone === "accent" ? theme.doneRow : theme.border },
+    { backgroundColor: tone === "accent" ? theme.doneRow : theme.control },
   ];
   if (!onPress) {
     return (
@@ -302,7 +302,7 @@ export function ProgressBar({
   const theme = useTheme();
   const width = `${Math.round(Math.min(1, Math.max(0, progress)) * 100)}%` as const;
   return (
-    <View style={[styles.track, { backgroundColor: theme.border }, style]}>
+    <View style={[styles.track, { backgroundColor: theme.control }, style]}>
       <View style={[styles.fill, { backgroundColor: theme.tint, width }]} />
     </View>
   );

@@ -78,6 +78,29 @@ describe("workouts repository", () => {
     expect(await storedProblems(db)).toEqual([]);
   });
 
+  it("lastNotes carries each exercise note from its latest finished session", async () => {
+    const { clock, repos } = await setup();
+    const first = await repos.workouts.start({
+      name: "Legs",
+      exercises: [
+        { ...squat([100]), notes: "belt on" },
+        { exercise_id: "builtin:leg-press", notes: "seat on 4", sets: [] },
+      ],
+    });
+    await repos.workouts.finish(first.id);
+    clock.advance(86_400_000);
+    const second = await repos.workouts.start({ name: "Legs", exercises: [squat([105])] });
+    await repos.workouts.finish(second.id);
+
+    const notes = await repos.workouts.lastNotes([
+      "builtin:barbell-back-squat",
+      "builtin:leg-press",
+      "builtin:deadlift",
+    ]);
+    // The squat note was removed in the latest session, so it stays removed.
+    expect([...notes]).toEqual([["builtin:leg-press", "seat on 4"]]);
+  });
+
   it("lastPerformance returns the sets from the most recent finished workout", async () => {
     const { clock, repos } = await setup();
     const first = await repos.workouts.start({ name: "Legs", exercises: [squat([100, 100])] });

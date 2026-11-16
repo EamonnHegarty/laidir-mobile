@@ -1,12 +1,17 @@
-// "Glas" (Irish for green): Láidir's palette. Green carries both the brand and "set done", and
-// stays readable across a gym. Light and dark follow the phone's setting.
+// "Glas" (Irish for green): Láidir's palette. The base is a neutral grey so every accent sits on it
+// cleanly; the accent (green by default) carries the brand and "set done". Light, dark or the
+// phone's setting is chosen in Settings.
 export const Colors = {
   light: {
-    text: "#0F1A14",
-    textSecondary: "#56655C",
-    background: "#F7FAF8",
-    backgroundElement: "#E6EEE9",
-    border: "#D2DDD6",
+    text: "#121417",
+    textSecondary: "#545B64",
+    /** Placeholders and hints in fields: lighter than secondary text but still readable. */
+    placeholder: "#6B727C",
+    background: "#F3F4F6",
+    backgroundElement: "#FFFFFF",
+    /** Inputs, unticked boxes and other inactive controls on a card. */
+    control: "#E6E8EC",
+    border: "#D9DCE1",
     // Darker green in light mode so white text on it and green text on the page both pass contrast.
     tint: "#167A43",
     onTint: "#FFFFFF",
@@ -15,11 +20,13 @@ export const Colors = {
     doneRow: "#D7F0E0",
   },
   dark: {
-    text: "#E8EFEA",
-    textSecondary: "#9AA59F",
-    background: "#0B0F0D",
-    backgroundElement: "#16201B",
-    border: "#24302A",
+    text: "#ECEDEF",
+    textSecondary: "#A6ABB3",
+    placeholder: "#8A9099",
+    background: "#111214",
+    backgroundElement: "#1C1D21",
+    control: "#2B2D33",
+    border: "#30333A",
     tint: "#3DDC84",
     onTint: "#08130D",
     danger: "#FF6B5E",
@@ -31,11 +38,19 @@ export const Colors = {
 export type ColorScheme = keyof typeof Colors;
 export type ThemeColor = keyof (typeof Colors)["light"];
 
+/** Light, dark, or follow the phone (Settings → Appearance; device-only). */
+export const APPEARANCES = ["system", "light", "dark"] as const;
+export type Appearance = (typeof APPEARANCES)[number];
+export const DEFAULT_APPEARANCE: Appearance = "system";
+export function isAppearance(value: unknown): value is Appearance {
+  return typeof value === "string" && (APPEARANCES as readonly string[]).includes(value);
+}
+
 /** Brand colours used outside React (app icon, splash, notifications). */
 export const Brand = {
   green: "#3DDC84",
   iconBackground: "#0E1A14",
-  splashBackground: "#0B0F0D",
+  splashBackground: "#111214",
 } as const;
 
 export const Spacing = {

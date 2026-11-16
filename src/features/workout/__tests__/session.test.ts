@@ -14,7 +14,9 @@ import {
   summarise,
   templateFor,
   toggleComplete,
+  setNote,
   updateSet,
+  withNotes,
 } from "../session";
 
 const routine: Routine = {
@@ -152,11 +154,11 @@ describe("finishing", () => {
     { exercise_id: "builtin:pull-up", sets: [{ set_type: "normal", completed: false }] },
   ];
 
-  it("drops empty unticked sets and then empty exercises", () => {
+  it("keeps only ticked sets, then drops empty exercises", () => {
     const clean = cleanForFinish(exercises);
     expect(clean).toHaveLength(1);
-    expect(clean[0]!.sets).toHaveLength(3);
-    expect(clean[0]!.sets[2]).toMatchObject({ completed: false, reps: 6 });
+    expect(clean[0]!.sets).toHaveLength(2);
+    expect(clean[0]!.sets.every((set) => set.completed)).toBe(true);
   });
 
   it("summarises done sets and working volume", () => {
@@ -171,5 +173,68 @@ describe("finishing", () => {
   it("names empty sessions by time of day", () => {
     expect(defaultSessionName(new Date(2026, 10, 15, 7))).toBe("Morning workout");
     expect(defaultSessionName(new Date(2026, 10, 15, 18))).toBe("Evening workout");
+  });
+});
+
+describe("filling sets below", () => {
+  const sets = (...weights: (number | undefined)[]): WorkoutExercise[] => [
+    {
+      exercise_id: "builtin:barbell-bench-press",
+      sets: weights.map((weight_kg) => ({
+        set_type: "normal" as const,
+        completed: false,
+        ...(weight_kg === undefined ? {} : { weight_kg }),
+      })),
+    },
+  ];
+  const weights = (list: WorkoutExercise[]) => list[0]!.sets.map((s) => s.weight_kg);
+
+  it("copies a value typed into set 1 into the empty sets below", () => {
+    let list = sets(undefined, undefined, undefined);
+    list = updateSet(list, 0, 0, { weight_kg: 6 }, { fillBelow: true });
+    list = updateSet(list, 0, 0, { weight_kg: 60 }, { fillBelow: true });
+    expect(weights(list)).toEqual([60, 60, 60]);
+  });
+
+  it("never changes sets above, done sets, or sets typed in by hand", () => {
+    let list = sets(50, 60, 60, 70);
+    list = updateSet(list, 0, 1, { weight_kg: 65 }, { fillBelow: true });
+    expect(weights(list)).toEqual([50, 65, 65, 70]);
+    list = toggleComplete(list, 0, 2);
+    list = updateSet(list, 0, 1, { weight_kg: 62.5 }, { fillBelow: true });
+    expect(weights(list)).toEqual([50, 62.5, 65, 70]);
+  });
+
+  it("leaves other set types and works only when asked", () => {
+    let list = sets(undefined, undefined);
+    list = updateSet(list, 0, 1, { set_type: "warmup" });
+    list = updateSet(list, 0, 0, { weight_kg: 40 }, { fillBelow: true });
+    expect(weights(list)).toEqual([40, undefined]);
+    expect(weights(updateSet(sets(undefined, undefined), 0, 0, { weight_kg: 40 }))).toEqual([
+      40,
+      undefined,
+    ]);
+  });
+});
+
+describe("exercise notes", () => {
+  const list: WorkoutExercise[] = [
+    { exercise_id: "builtin:leg-press", sets: [] },
+    { exercise_id: "builtin:barbell-back-squat", notes: "belt", sets: [] },
+  ];
+
+  it("sets, trims and removes a note", () => {
+    expect(setNote(list, 0, "  seat on 4 ")[0]!.notes).toBe("seat on 4");
+    expect(setNote(list, 1, "   ")[1]).not.toHaveProperty("notes");
+  });
+
+  it("carries notes over to exercises without one", () => {
+    const notes = new Map([
+      ["builtin:leg-press", "seat on 4"],
+      ["builtin:barbell-back-squat", "old"],
+    ]);
+    const next = withNotes(list, notes);
+    expect(next.map((e) => e.notes)).toEqual(["seat on 4", "belt"]);
+    expect(withNotes(list, notes, 1)[0]).not.toHaveProperty("notes");
   });
 });

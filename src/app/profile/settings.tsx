@@ -1,16 +1,15 @@
 import Constants from "expo-constants";
-import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
 
 import { CommitField } from "@/components/commit-field";
-import { RowGroup } from "@/components/glas";
+import { RowGroup, Segmented } from "@/components/glas";
 import { Icon } from "@/components/icon";
 import { Chip, ChipGrid, Label, Row, Screen, SectionHeader } from "@/components/ui";
-import { Spacing } from "@/constants/theme";
+import { type Appearance, APPEARANCES, Spacing } from "@/constants/theme";
 import { CATALOGUE_VERSION } from "@/data/catalogue";
 import { useLiveQuery, useRepositories } from "@/data/database-provider";
-import type { Settings } from "@/data/settings";
+import { type RestAlert, REST_ALERTS, type Settings } from "@/data/settings";
 import { AccentPicker } from "@/features/settings/accent-picker";
 import { shareBackup } from "@/features/settings/backup";
 import { formatDuration } from "@/lib/units";
@@ -18,19 +17,31 @@ import { formatDuration } from "@/lib/units";
 import contract from "../../../contract.json";
 
 const REST_CHOICES = [60, 90, 120, 150, 180, 240, 300];
+const APPEARANCE_LABELS: Record<Appearance, string> = {
+  system: "System",
+  light: "Light",
+  dark: "Dark",
+};
+const REST_ALERT_LABELS: Record<RestAlert, string> = {
+  both: "Sound + vibration",
+  sound: "Sound",
+  vibrate: "Vibration",
+  silent: "Silent",
+};
 
 export default function SettingsScreen() {
-  const router = useRouter();
   const repos = useRepositories();
   const [exporting, setExporting] = useState(false);
   const query = useLiveQuery(async (r) => {
-    const [settings, displayName, rests, accent] = await Promise.all([
+    const [settings, displayName, accent, appearance, restAlert, reminder] = await Promise.all([
       r.settings.get(),
       r.settings.displayName(),
-      r.settings.exerciseRest(),
       r.settings.accent(),
+      r.settings.appearance(),
+      r.settings.restAlert(),
+      r.settings.workoutReminder(),
     ]);
-    return { settings, displayName, rests: rests.size, accent };
+    return { settings, displayName, accent, appearance, restAlert, reminder };
   }, []);
   const update = (changes: Partial<Settings>) => void repos.settings.update(changes);
   const variant = (Constants.expoConfig?.extra as { variant?: string } | undefined)?.variant;
@@ -47,7 +58,7 @@ export default function SettingsScreen() {
   };
 
   if (!query.data) return <Screen />;
-  const { settings, displayName, rests, accent } = query.data;
+  const { settings, displayName, accent, appearance, restAlert, reminder } = query.data;
 
   return (
     <Screen>
@@ -68,12 +79,23 @@ export default function SettingsScreen() {
           />
         </View>
 
+        <SectionHeader>Appearance</SectionHeader>
+        <View style={styles.pad}>
+          <Segmented
+            options={APPEARANCES}
+            value={appearance}
+            labels={APPEARANCE_LABELS}
+            onChange={(next) => void repos.settings.setAppearance(next)}
+          />
+        </View>
+
         <SectionHeader>Accent colour</SectionHeader>
         <View style={styles.pad}>
           <AccentPicker value={accent} onChange={(next) => void repos.settings.setAccent(next)} />
         </View>
         <Label tone="secondary" size="small" style={styles.note}>
-          Buttons, done sets, charts and the tab bar. Kept on this phone only.
+          Buttons, done sets, charts and the tab bar. Appearance and colour are kept on this phone
+          only.
         </Label>
 
         <SectionHeader>Weight</SectionHeader>
@@ -119,16 +141,35 @@ export default function SettingsScreen() {
           The default between sets, when a workout or exercise doesn&apos;t set its own. Weights are
           always stored in kg, so switching units never changes your history.
         </Label>
+
+        <SectionHeader>When rest is over</SectionHeader>
+        <Choice>
+          {REST_ALERTS.map((alert) => (
+            <Chip
+              key={alert}
+              label={REST_ALERT_LABELS[alert]}
+              selected={restAlert === alert}
+              onPress={() => void repos.settings.setRestAlert(alert)}
+            />
+          ))}
+        </Choice>
+        <Label tone="secondary" size="small" style={styles.note}>
+          Rings with the screen locked or the app in the background too. Each exercise&apos;s rest
+          is set from the timer chip on its card during a workout.
+        </Label>
+
+        <SectionHeader>Unfinished workout</SectionHeader>
         <RowGroup style={styles.group}>
           <Row
-            title="Per-exercise rest"
-            subtitle="Rest times you picked during workouts"
-            onPress={() => router.push("/profile/rest")}
+            title="Remind me"
+            subtitle="If a workout is left running with the app closed for 90 minutes"
+            onPress={() => void repos.settings.setWorkoutReminder(!reminder)}
             right={
-              <View style={styles.right}>
-                <Label tone="secondary">{rests}</Label>
-                <Icon name="chevron_right" />
-              </View>
+              <Switch
+                value={reminder}
+                onValueChange={(on) => void repos.settings.setWorkoutReminder(on)}
+                accessibilityLabel="Remind me about an unfinished workout"
+              />
             }
           />
         </RowGroup>
@@ -184,5 +225,4 @@ const styles = StyleSheet.create({
   pad: { paddingHorizontal: Spacing.three },
   group: { marginHorizontal: Spacing.three, marginTop: Spacing.two },
   note: { paddingHorizontal: Spacing.three, paddingTop: Spacing.two },
-  right: { flexDirection: "row", alignItems: "center", gap: Spacing.one },
 });

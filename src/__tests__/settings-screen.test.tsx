@@ -16,13 +16,20 @@ function fakeRepositories() {
   let stored: Settings = { ...DEFAULT_SETTINGS };
   let name: string | undefined;
   let accent = "glas";
+  let restAlert = "both";
   const settings = {
     displayName: async () => name,
     setDisplayName: async (next: string | null) => {
       name = next?.trim() || undefined;
       changes.notify();
     },
-    exerciseRest: async () => new Map([["builtin:bench-press", 90]]),
+    appearance: async () => "system",
+    restAlert: async () => restAlert,
+    setRestAlert: async (next: string) => {
+      restAlert = next;
+      changes.notify();
+    },
+    workoutReminder: async () => true,
     accent: async () => accent,
     setAccent: async (next: string) => {
       accent = next;
@@ -40,6 +47,7 @@ function fakeRepositories() {
     stored: () => stored,
     name: () => name,
     accent: () => accent,
+    restAlert: () => restAlert,
   };
 }
 
@@ -67,7 +75,7 @@ describe("Settings screen", () => {
     expect(
       await screen.findByRole("button", { name: "Pounds (lb)", selected: true }),
     ).toBeOnTheScreen();
-    expect(screen.getByRole("button", { name: /Per-exercise rest/ })).toHaveTextContent(/1/);
+    expect(screen.queryByText(/Per-exercise rest/)).toBeNull();
 
     const field = screen.getByLabelText("Display name");
     await fireEvent(field, "focus");
@@ -81,5 +89,8 @@ describe("Settings screen", () => {
     expect(
       await screen.findByRole("radio", { name: "Farraige, Sea blue", checked: true }),
     ).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Vibration" }));
+    expect(fake.restAlert()).toBe("vibrate");
   });
 });

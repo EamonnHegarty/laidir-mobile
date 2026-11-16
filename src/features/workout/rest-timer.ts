@@ -4,10 +4,16 @@ import { useSyncExternalStore } from "react";
  * The rest timer between sets. It stores the end time rather than counting down, so it stays right
  * when the app is backgrounded or the screen re-renders late. Only one runs at a time.
  */
-export type RestTimer = { endsAt: number; total: number } | null;
+export type RestTimer = {
+  endsAt: number;
+  total: number;
+  /** Changes on each start (not on −15/+15), e.g. to re-open a minimised timer for a new rest. */
+  run: number;
+} | null;
 
 export function createRestTimer(now: () => number = Date.now) {
   let state: RestTimer = null;
+  let runs = 0;
   const listeners = new Set<() => void>();
   const set = (next: RestTimer) => {
     state = next;
@@ -23,14 +29,14 @@ export function createRestTimer(now: () => number = Date.now) {
     },
     start(seconds: number) {
       if (seconds <= 0) return set(null);
-      set({ endsAt: now() + seconds * 1000, total: seconds });
+      set({ endsAt: now() + seconds * 1000, total: seconds, run: ++runs });
     },
     /** Adds (or with a negative value, removes) time. Going to zero stops it. */
     adjust(seconds: number) {
       if (!state) return;
       const endsAt = state.endsAt + seconds * 1000;
       if (endsAt <= now()) return set(null);
-      set({ endsAt, total: Math.max(1, state.total + seconds) });
+      set({ ...state, endsAt, total: Math.max(1, state.total + seconds) });
     },
     stop: () => set(null),
     /** Whole seconds left, rounded up; 0 when finished or not running. */
