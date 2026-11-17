@@ -40,6 +40,7 @@ const DEVICE_PREFS = [
   "local_rest_alert",
   "local_workout_reminder",
   "local_exact_alarm_asked",
+  "local_rest_ring_on_silent",
 ];
 const ENTITY_TABLES = Object.values(tables).map((t) => t.table);
 

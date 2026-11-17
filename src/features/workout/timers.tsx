@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { AppState, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ProgressBar } from "@/components/glas";
 import { Icon } from "@/components/icon";
@@ -9,7 +9,8 @@ import { useTheme } from "@/hooks/use-theme";
 import { restOver } from "@/lib/haptics";
 import { formatDuration } from "@/lib/units";
 
-import { restAlertMode, restAlertScheduled } from "./rest-alert";
+import { playsOwnSound, restAlertMode, restAlertScheduled } from "./rest-alert";
+import { playRestSound } from "./rest-sound";
 import { restTimer, type RestTimer, useRestTimer } from "./rest-timer";
 
 /** The current time, refreshed every `ms` while mounted (read from state, so renders stay pure). */
@@ -53,6 +54,8 @@ export function RestWatcher() {
       const mode = restAlertMode();
       restTimer.stop();
       if (!notified && (mode === "both" || mode === "vibrate")) restOver();
+      // Ring even on silent: the app's own beep (the notification stays quiet while the app is open).
+      if (playsOwnSound() && AppState.currentState === "active") void playRestSound();
     }
   }, [timer, left]);
   return null;
