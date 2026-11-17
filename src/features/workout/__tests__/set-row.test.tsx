@@ -35,13 +35,13 @@ describe("LogSetRow", () => {
     expect(onChange.mock.calls.at(-1)![0]).toEqual({ weight_kg: undefined });
   });
 
-  it("ticks and cycles the set type", async () => {
+  it("ticks, and shows a plain number that tapping doesn't change", async () => {
     const onChange = jest.fn();
     const onToggle = jest.fn();
     await render(
       <LogSetRow
         number={2}
-        set={{ set_type: "normal", completed: false }}
+        set={{ set_type: "warmup", completed: false }}
         tracking="reps_only"
         hint={{}}
         units={units}
@@ -54,7 +54,9 @@ describe("LogSetRow", () => {
     expect(screen.queryByLabelText(/Weight/)).toBeNull();
     await fireEvent.press(screen.getByLabelText("Done, set 2, Pull-up"));
     expect(onToggle).toHaveBeenCalled();
-    await fireEvent.press(screen.getByLabelText("Working set 2. Change to Warm-up"));
-    expect(onChange).toHaveBeenCalledWith({ set_type: "warmup" });
+    // Even a warm-up shows its position, not a letter.
+    expect(screen.getByText("2")).toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText("Set 2"));
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

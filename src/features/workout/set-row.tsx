@@ -5,17 +5,14 @@ import { Icon } from "@/components/icon";
 import { LiveField } from "@/components/live-field";
 import { Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
-import type { SetType, Tracking, WorkoutSet } from "@/data/contract";
+import type { Tracking, WorkoutSet } from "@/data/contract";
 import type { Settings } from "@/data/settings";
 import { useTheme } from "@/hooks/use-theme";
-import { SET_TYPE_LABELS } from "@/lib/labels";
 import { durationInput, parseDecimal, parseDuration, parseWhole } from "@/lib/parse";
 import { displayNumber, kgToUnit, unitToKg } from "@/lib/units";
 
 import { fieldsFor } from "./session";
 
-const SET_TYPES: SetType[] = ["normal", "warmup", "drop", "failure"];
-const SHORT: Record<SetType, string> = { normal: "", warmup: "W", drop: "D", failure: "F" };
 const METRES_PER_MILE = 1609.344;
 const SWIPE_WIDTH = 88;
 
@@ -23,9 +20,9 @@ type Measures = Pick<WorkoutSet, "weight_kg" | "reps" | "duration_s" | "distance
 type Units = Pick<Settings, "weight_unit" | "distance_unit">;
 
 /**
- * One set while logging: type badge, last time's value, inputs for what the exercise tracks
- * (empty fields show a hint you can accept by ticking), and the done tick. Swipe it right to left to
- * delete it (long-press the set number, or the accessibility action, does the same).
+ * One set while logging: its number (1, 2, 3…), last time's value, inputs for what the exercise
+ * tracks (empty fields show a hint you can accept by ticking), and the done tick. Swipe it right to
+ * left to delete it (long-press the set number, or the accessibility action, does the same).
  */
 export function LogSetRow({
   number,
@@ -39,7 +36,7 @@ export function LogSetRow({
   onToggle,
   onRemove,
 }: {
-  /** Working-set number (warm-ups, drops and failure sets show a letter instead). */
+  /** The set's position in the exercise: 1, 2, 3… */
   number: number;
   set: WorkoutSet;
   tracking: Tracking;
@@ -53,8 +50,7 @@ export function LogSetRow({
   onRemove: () => void;
 }) {
   const theme = useTheme();
-  const label = SHORT[set.set_type] || String(number);
-  const nextType = SET_TYPES[(SET_TYPES.indexOf(set.set_type) + 1) % SET_TYPES.length]!;
+  const label = String(number);
   const a11y = (what: string) => `${what}, set ${label}, ${exerciseName}`;
   const distanceInMetres = units.distance_unit === "km";
 
@@ -171,25 +167,21 @@ export function LogSetRow({
         ]}
       >
         <Pressable
-          onPress={() => onChange({ set_type: nextType })}
           onLongPress={() =>
             Alert.alert(`Remove set ${label}?`, undefined, [
               { text: "Cancel", style: "cancel" },
               { text: "Remove", style: "destructive", onPress: onRemove },
             ])
           }
-          accessibilityHint="Tap to change the set type. Long-press to remove the set."
+          accessibilityHint="Long-press to remove the set."
           accessibilityActions={[{ name: "remove", label: "Remove set" }]}
           onAccessibilityAction={(e) => {
             if (e.nativeEvent.actionName === "remove") onRemove();
           }}
-          accessibilityRole="button"
-          accessibilityLabel={`${SET_TYPE_LABELS[set.set_type]} set ${label}. Change to ${SET_TYPE_LABELS[nextType]}`}
+          accessibilityLabel={`Set ${label}`}
           style={styles.badge}
         >
-          <Label tone={set.set_type === "normal" ? "default" : "tint"} size="heading">
-            {label}
-          </Label>
+          <Label size="heading">{label}</Label>
         </Pressable>
         <Label tone="secondary" size="small" style={styles.previous} numberOfLines={1}>
           {previous ?? "—"}
