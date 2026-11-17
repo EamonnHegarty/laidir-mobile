@@ -43,6 +43,22 @@ describe("app.config variants", () => {
     expect(android?.blockedPermissions).toContain("android.permission.USE_EXACT_ALARM");
   });
 
+  it("blocks permissions the app doesn't need (each is a Play review question)", () => {
+    const blocked = loadConfig().android?.blockedPermissions ?? [];
+    for (const p of [
+      "RECORD_AUDIO",
+      "READ_EXTERNAL_STORAGE",
+      "WRITE_EXTERNAL_STORAGE",
+      "SYSTEM_ALERT_WINDOW",
+    ]) {
+      expect(blocked).toContain(`android.permission.${p}`);
+    }
+    // The dev client keeps its overlay permission for the dev menu.
+    expect(loadConfig("development").android?.blockedPermissions).not.toContain(
+      "android.permission.SYSTEM_ALERT_WINDOW",
+    );
+  });
+
   it("ships over-the-air updates only to compatible builds", () => {
     const config = loadConfig();
     expect(config.runtimeVersion).toEqual({ policy: "fingerprint" });

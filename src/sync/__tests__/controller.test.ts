@@ -16,6 +16,7 @@ function harness({ stored = null as SessionAccount | null } = {}) {
     push: jest.fn(async () => []),
     pull: jest.fn(async () => ({ items: [], next_cursor: "c0", has_more: false })),
     profile: jest.fn(async () => undefined),
+    deleteAccount: jest.fn(async () => undefined),
   };
   const repo = {
     account: jest.fn(async () => linked),
@@ -149,5 +150,24 @@ describe("sync controller", () => {
     expect(h.repo.eraseSyncedData).toHaveBeenCalled();
     expect(h.repo.bindAccount).toHaveBeenLastCalledWith(YOU, undefined);
     expect(h.controller.getState()).toMatchObject({ kind: "signed-in", account: YOU });
+  });
+
+  it("deletes the account on the server, then erases this phone's data and signs out", async () => {
+    const h = harness({ stored: ME });
+    await h.controller.start();
+    await h.controller.deleteAccount();
+    expect(h.api.deleteAccount).toHaveBeenCalled();
+    expect(h.repo.eraseSyncedData).toHaveBeenCalled();
+    expect(h.signOut).toHaveBeenCalled();
+    expect(h.controller.getState()).toMatchObject({ kind: "signed-out" });
+  });
+
+  it("keeps everything on the phone if the server delete fails", async () => {
+    const h = harness({ stored: ME });
+    await h.controller.start();
+    h.api.deleteAccount.mockRejectedValueOnce(new OfflineError());
+    await expect(h.controller.deleteAccount()).rejects.toBeInstanceOf(OfflineError);
+    expect(h.repo.eraseSyncedData).not.toHaveBeenCalled();
+    expect(h.controller.getState()).toMatchObject({ kind: "signed-in" });
   });
 });

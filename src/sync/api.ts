@@ -77,7 +77,10 @@ export function createApi(session: AuthSession, fetchFn: typeof fetch = fetch) {
     return (await res.json()) as T;
   }
 
-  const api: SyncApi & { profile(): Promise<Profile | undefined> } = {
+  const api: SyncApi & {
+    profile(): Promise<Profile | undefined>;
+    deleteAccount(): Promise<void>;
+  } = {
     async pull(cursor, limit) {
       const params = new URLSearchParams({ limit: String(limit) });
       if (cursor) params.set("cursor", cursor);
@@ -94,6 +97,12 @@ export function createApi(session: AuthSession, fetchFn: typeof fetch = fetch) {
         }),
       );
       return body.results;
+    },
+
+    /** Deletes the account and all its data on the server (signs out every device). */
+    async deleteAccount() {
+      const res = await call("/v1/account", { method: "DELETE" });
+      if (res.status !== 204) await json<unknown>(res);
     },
 
     /** The account's Profile, or undefined if it has none yet. */

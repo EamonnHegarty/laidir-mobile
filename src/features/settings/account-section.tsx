@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet } from "react-native";
 
 import { RowGroup } from "@/components/glas";
@@ -8,16 +7,18 @@ import { Spacing } from "@/constants/theme";
 import { useSync } from "@/sync/sync-provider";
 import type { SyncState } from "@/sync/controller";
 
-/** Settings → Back up & sync: sign in, sync status, sync now, sign out. */
+/**
+ * Settings → Back up & sync: sign in, a quiet "Backed up" (problems only when there are any), sign
+ * out. Syncing itself is automatic and never needs a button.
+ */
 export function AccountSection() {
   const { state, controller } = useSync();
-  const now = useMinuteClock();
 
   return (
     <>
       <SectionHeader>Back up & sync</SectionHeader>
       <RowGroup style={styles.group}>
-        <Rows state={state} now={now} controller={controller} />
+        <Rows state={state} controller={controller} />
       </RowGroup>
       <Label tone="secondary" size="small" style={styles.note}>
         {note(state)}
@@ -28,11 +29,9 @@ export function AccountSection() {
 
 function Rows({
   state,
-  now,
   controller,
 }: {
   state: SyncState;
-  now: number;
   controller: ReturnType<typeof useSync>["controller"];
 }) {
   switch (state.kind) {
@@ -78,13 +77,8 @@ function Rows({
         <>
           <Row
             title={state.account.email ?? "Signed in"}
-            subtitle={status(state, now)}
-            right={state.syncing ? <ActivityIndicator /> : <Icon name="cloud_done" />}
-          />
-          <Row
-            title="Sync now"
-            onPress={state.syncing ? undefined : () => void controller.syncNow({ force: true })}
-            right={<Icon name="sync" />}
+            subtitle={status(state)}
+            right={<Icon name={problem(state) ? "cloud_off" : "cloud_done"} />}
           />
           <Row
             title="Sign out"
@@ -92,43 +86,41 @@ function Rows({
             onPress={() => confirmSignOut(() => void controller.signOut())}
             right={<Icon name="logout" />}
           />
+          <Row
+            title="Delete account"
+            subtitle="Deletes your account and all your data"
+            onPress={() => confirmDelete(() => deleteAccount(controller))}
+            right={<Icon name="delete_forever" />}
+          />
         </>
       );
   }
 }
 
-function status(state: Extract<SyncState, { kind: "signed-in" }>, now: number): string {
-  if (state.syncing) return "Syncing…";
+type SignedIn = Extract<SyncState, { kind: "signed-in" }>;
+
+/** Something the user should know about; otherwise backing up stays invisible. */
+function problem(state: SignedIn): string | undefined {
   if (state.error) return state.error;
-  const parts: string[] = [];
-  parts.push(state.lastSyncedAt ? `Backed up ${ago(state.lastSyncedAt, now)}` : "Not synced yet");
-  if (state.pending > 0) {
-    parts.push(`${state.pending} change${state.pending === 1 ? "" : "s"} waiting`);
-  }
   if (state.rejected > 0) {
-    parts.push(`${state.rejected} item${state.rejected === 1 ? "" : "s"} couldn't sync`);
+    return `${state.rejected} item${state.rejected === 1 ? "" : "s"} couldn't be backed up`;
   }
-  return parts.join(" · ");
+  return undefined;
+}
+
+/** Quiet by design: "Backed up" unless there's a problem. */
+function status(state: SignedIn): string {
+  return problem(state) ?? "Backed up";
 }
 
 function note(state: SyncState): string {
   if (state.kind === "signed-in") {
-    return "Changes back up automatically when you're online. Láidir works fully offline too.";
+    return "Everything backs up automatically. Pull down on this screen to check now.";
   }
   if (state.kind === "mismatch") {
     return "A phone's data belongs to the first account that signs in on it.";
   }
   return "Optional. Without an account everything stays on this phone, and the app works the same.";
-}
-
-/** "just now", "5 min ago", "2 h ago", or a date. */
-export function ago(then: number, now: number): string {
-  const minutes = Math.floor((now - then) / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
-  return new Date(then).toLocaleDateString();
 }
 
 function confirmSignOut(onConfirm: () => void) {
@@ -142,6 +134,37 @@ function confirmSignOut(onConfirm: () => void) {
   );
 }
 
+/** Two steps, because it can't be undone. */
+function confirmDelete(onConfirm: () => void) {
+  Alert.alert(
+    "Delete your account?",
+    "This permanently deletes your Láidir account and everything backed up: workouts, programs, " +
+      "custom exercises and settings. Workouts on this phone are erased too. Export a backup " +
+      "first if you want to keep a copy.",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Continue",
+        style: "destructive",
+        onPress: () =>
+          Alert.alert("Are you sure?", "Your account and data can't be recovered.", [
+            { text: "Cancel", style: "cancel" },
+            { text: "Delete account", style: "destructive", onPress: onConfirm },
+          ]),
+      },
+    ],
+  );
+}
+
+function deleteAccount(controller: ReturnType<typeof useSync>["controller"]) {
+  controller.deleteAccount().catch((error: unknown) => {
+    Alert.alert(
+      "Couldn't delete your account",
+      `${error instanceof Error ? error.message : String(error)}\n\nNothing was deleted on this phone. Check your connection and try again.`,
+    );
+  });
+}
+
 function confirmErase(onConfirm: () => void) {
   Alert.alert(
     "Erase this phone's data?",
@@ -152,16 +175,6 @@ function confirmErase(onConfirm: () => void) {
       { text: "Erase", style: "destructive", onPress: onConfirm },
     ],
   );
-}
-
-/** Re-renders once a minute so "5 min ago" stays current. */
-function useMinuteClock(): number {
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-  return now;
 }
 
 const styles = StyleSheet.create({
