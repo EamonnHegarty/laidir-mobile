@@ -21,6 +21,9 @@ export type RoutineInput = {
   exercises: RoutineExercise[];
 };
 
+/** Where a workout sits: its program (absent = none) and position. */
+export type Placement = { folder_id?: string; sort_order?: number };
+
 export type RoutineGroup = { folder: RoutineFolder; routines: Routine[] };
 export type GroupedRoutines = { folders: RoutineGroup[]; unfiled: Routine[] };
 
@@ -227,6 +230,53 @@ export function routinesRepo({ db, clock, newId }: Deps) {
         });
         await writeEntity(tx, doc);
         return doc;
+      });
+    },
+
+    /**
+     * Moves a workout into a program (`folderId`), or out of any (`undefined`), at the end of it.
+     * Returns where it was, so the move can be undone with `place`. Moving to where it already is
+     * changes nothing.
+     */
+    async move(id: string, folderId: string | undefined): Promise<Placement> {
+      return db.transaction(async (tx) => {
+        const current = await liveRoutine(tx, id);
+        const before: Placement = { folder_id: current.folder_id, sort_order: current.sort_order };
+        if (folderId === current.folder_id) return before;
+        if (folderId !== undefined) await liveFolder(tx, folderId);
+        const { folder_id: _old, ...rest } = current;
+        await writeEntity(
+          tx,
+          compact({
+            ...rest,
+            folder_id: folderId,
+            sort_order: await nextRoutineSortOrder(tx, folderId),
+            updated_at: nextUpdatedAt(clock, current.updated_at),
+          }),
+        );
+        return before;
+      });
+    },
+
+    /** Puts a workout back exactly where `move` found it (Undo). A deleted program means none. */
+    async place(id: string, placement: Placement): Promise<void> {
+      await db.transaction(async (tx) => {
+        const current = await liveRoutine(tx, id);
+        let folderId = placement.folder_id;
+        if (folderId !== undefined) {
+          const folder = await readEntity<RoutineFolder>(tx, "ROUTINE_FOLDER", folderId);
+          if (!folder || folder.deleted_at !== null) folderId = undefined;
+        }
+        const { folder_id: _old, sort_order: _order, ...rest } = current;
+        await writeEntity(
+          tx,
+          compact({
+            ...rest,
+            folder_id: folderId,
+            sort_order: placement.sort_order,
+            updated_at: nextUpdatedAt(clock, current.updated_at),
+          }),
+        );
       });
     },
 

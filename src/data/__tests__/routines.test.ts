@@ -120,6 +120,52 @@ describe("routines", () => {
   });
 });
 
+describe("move", () => {
+  it("moves a workout into a program (at the end), out of it, and back with place()", async () => {
+    const { db, repos } = await setup();
+    const ppl = await repos.routines.createFolder("PPL");
+    await repos.routines.create({ name: "Push", folder_id: ppl.id, exercises: [] });
+    const solo = await repos.routines.create({ name: "Solo", exercises: [bench] });
+
+    const before = await repos.routines.move(solo.id, ppl.id);
+    expect(before).toEqual({ sort_order: 1000 });
+    let grouped = await repos.routines.listGrouped();
+    expect(grouped.folders[0]!.routines.map((r) => r.name)).toEqual(["Push", "Solo"]);
+    expect(grouped.unfiled).toEqual([]);
+
+    await repos.routines.move(solo.id, undefined);
+    grouped = await repos.routines.listGrouped();
+    expect(grouped.unfiled.map((r) => r.name)).toEqual(["Solo"]);
+    expect(await repos.routines.get(solo.id)).not.toHaveProperty("folder_id");
+
+    // Undo puts it back exactly where it was.
+    await repos.routines.place(solo.id, { folder_id: ppl.id, sort_order: 2000 });
+    expect(await repos.routines.get(solo.id)).toMatchObject({
+      folder_id: ppl.id,
+      sort_order: 2000,
+    });
+    expect(await storedProblems(db)).toEqual([]);
+  });
+
+  it("moving to where it already is changes nothing", async () => {
+    const { repos } = await setup();
+    const ppl = await repos.routines.createFolder("PPL");
+    const push = await repos.routines.create({ name: "Push", folder_id: ppl.id, exercises: [] });
+    await repos.routines.move(push.id, ppl.id);
+    expect((await repos.routines.get(push.id))?.updated_at).toBe(push.updated_at);
+  });
+
+  it("won't move into a deleted program; undo into one falls back to no program", async () => {
+    const { repos } = await setup();
+    const ppl = await repos.routines.createFolder("PPL");
+    const solo = await repos.routines.create({ name: "Solo", exercises: [] });
+    await repos.routines.removeFolder(ppl.id);
+    await expect(repos.routines.move(solo.id, ppl.id)).rejects.toBeInstanceOf(NotFoundError);
+    await repos.routines.place(solo.id, { folder_id: ppl.id, sort_order: 1000 });
+    expect(await repos.routines.get(solo.id)).not.toHaveProperty("folder_id");
+  });
+});
+
 describe("reorder", () => {
   it("puts a program's workouts in the given order and only saves the ones that moved", async () => {
     const { repos } = await setup();
