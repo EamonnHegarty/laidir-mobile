@@ -75,6 +75,8 @@ function ThemedTabs() {
       <NativeTabs
         backgroundColor={colors.background}
         indicatorColor={colors.doneRow}
+        // No grey press ripple: the selected-tab indicator is the only feedback.
+        rippleColor="transparent"
         iconColor={{ default: colors.textSecondary, selected: colors.tint }}
         labelStyle={{
           default: { color: colors.textSecondary },
