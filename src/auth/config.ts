@@ -11,6 +11,10 @@ export const SCOPES = ["openid", "email", "profile"];
 
 export const API_BASE = "https://yqyk3qt5b8.execute-api.eu-west-1.amazonaws.com";
 
+/** The Claude connector (laidir-api MCP server): what users paste into Claude. */
+export const MCP_URL = `${API_BASE}/mcp`;
+export const CLAUDE_CLIENT_ID = "796d0ve73qia2h9rsr6ndc067c";
+
 export const discovery = {
   authorizationEndpoint: `${AUTH_DOMAIN}/oauth2/authorize`,
   tokenEndpoint: `${AUTH_DOMAIN}/oauth2/token`,
