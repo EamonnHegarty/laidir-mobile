@@ -39,7 +39,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Play restricts it to alarm/timer/calendar apps, so it's blocked even if a library adds it.
     // Without the grant the alert still arrives, possibly a little late.
     permissions: ["android.permission.SCHEDULE_EXACT_ALARM"],
-    blockedPermissions: ["android.permission.USE_EXACT_ALARM"],
+    // Blocked even if a library or Expo's defaults add them (each one is a Play review question):
+    // - RECORD_AUDIO: expo-audio only plays the rest beep; a gym app never needs the mic.
+    // - Storage: backups go out through the share sheet (app cache + FileProvider), no storage access.
+    // - SYSTEM_ALERT_WINDOW: only the dev client's dev menu uses it.
+    blockedPermissions: [
+      "android.permission.USE_EXACT_ALARM",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      ...(IS_DEV ? [] : ["android.permission.SYSTEM_ALERT_WINDOW"]),
+    ],
     predictiveBackGestureEnabled: false,
   },
   plugins: [
@@ -65,6 +75,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // the Android Keystore-backed store (excluded from Auto Backup by the plugin).
     "expo-web-browser",
     "expo-secure-store",
+    // Plays the "rest over" beep while the app is open (media volume, so silent mode doesn't mute
+    // it). No recording, and no background playback (that would need a foreground-service
+    // permission Play asks you to justify).
+    ["expo-audio", { recordAudioAndroid: false, enableBackgroundPlayback: false }],
   ],
   // EAS Update: JS-only changes ship over the air (eas update --channel preview) without a new build.
   // The fingerprint policy changes the runtime version whenever native code changes, so an update

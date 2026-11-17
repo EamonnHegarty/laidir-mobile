@@ -1,5 +1,5 @@
 import * as Notifications from "expo-notifications";
-import { AndroidImportance } from "expo-notifications";
+import { AndroidAudioContentType, AndroidAudioUsage, AndroidImportance } from "expo-notifications";
 import { Platform } from "react-native";
 
 import { DEFAULT_REST_ALERT, type RestAlert } from "@/data/settings";
@@ -20,6 +20,15 @@ const REST_CHANNELS: Record<Exclude<RestAlert, "silent">, string> = {
   sound: "rest-sound",
   vibrate: "rest-vibrate",
 };
+/**
+ * "Ring even on silent": the same choices on channels whose sound uses Android's alarm category
+ * (alarm volume), like a kitchen timer. Channel settings can't change after creation, so these are
+ * separate channels rather than a flag on the old ones.
+ */
+const LOUD_CHANNELS: Record<"both" | "sound", string> = {
+  both: "rest-alarm-both",
+  sound: "rest-alarm-sound",
+};
 const REMINDER_CHANNEL = "workout-reminder";
 /** The channel used before sound settings existed; removed so it doesn't linger in system settings. */
 const OLD_CHANNEL = "rest-timer";
@@ -31,6 +40,7 @@ export const REMINDER_AFTER_MS = 90 * 60 * 1000;
 type Kind = "rest" | "reminder";
 
 let mode: RestAlert = DEFAULT_REST_ALERT;
+let ringOnSilent = true;
 /** Fixed ids, so a notification scheduled before the app was killed can still be cancelled. */
 const REST_ID = "rest-over";
 const REMINDER_ID = "workout-reminder";
@@ -50,7 +60,8 @@ export function prepareRestAlerts(): Promise<boolean> {
           return {
             shouldShowBanner: show,
             shouldShowList: show,
-            shouldPlaySound: show,
+            // With "Ring even on silent" the app plays its own beep while open (rest-sound.ts).
+            shouldPlaySound: show && !playsOwnSound(),
             shouldSetBadge: false,
           };
         },
@@ -80,6 +91,26 @@ export function prepareRestAlerts(): Promise<boolean> {
           sound: null,
           enableVibrate: true,
           vibrationPattern: VIBRATION,
+        });
+        const alarmAudio = {
+          usage: AndroidAudioUsage.ALARM,
+          contentType: AndroidAudioContentType.SONIFICATION,
+          flags: { enforceAudibility: true, requestHardwareAudioVideoSynchronization: false },
+        };
+        await Notifications.setNotificationChannelAsync(LOUD_CHANNELS.both, {
+          ...rest,
+          name: "Rest timer: ring on silent, with vibration",
+          sound: "default",
+          audioAttributes: alarmAudio,
+          enableVibrate: true,
+          vibrationPattern: VIBRATION,
+        });
+        await Notifications.setNotificationChannelAsync(LOUD_CHANNELS.sound, {
+          ...rest,
+          name: "Rest timer: ring on silent",
+          sound: "default",
+          audioAttributes: alarmAudio,
+          enableVibrate: false,
         });
         await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL, {
           name: "Unfinished workout",
@@ -118,6 +149,24 @@ export function restAlertMode(): RestAlert {
   return mode;
 }
 
+/** Settings → "Ring even on silent". Applies from the next rest (and reschedules a running one). */
+export function setRestRingOnSilent(next: boolean) {
+  if (next === ringOnSilent) return;
+  ringOnSilent = next;
+  queue(() => syncRest(restTimer.get()));
+}
+
+/** While the app is open, it plays the beep itself when ring-on-silent applies to this mode. */
+export function playsOwnSound(): boolean {
+  return ringOnSilent && (mode === "both" || mode === "sound");
+}
+
+function restChannel(): string | undefined {
+  if (mode === "silent") return undefined;
+  if (ringOnSilent && (mode === "both" || mode === "sound")) return LOUD_CHANNELS[mode];
+  return REST_CHANNELS[mode];
+}
+
 export function kindOf(data: unknown): Kind | undefined {
   const kind = (data as { kind?: unknown } | null | undefined)?.kind;
   return kind === "rest" || kind === "reminder" ? kind : undefined;
@@ -133,7 +182,8 @@ async function syncRest(timer: RestTimer) {
   restScheduled = false;
   if (ranOut) return;
   await cancel(REST_ID);
-  if (!timer || mode === "silent" || !(await prepareRestAlerts())) return;
+  const channelId = restChannel();
+  if (!timer || !channelId || !(await prepareRestAlerts())) return;
   try {
     await Notifications.scheduleNotificationAsync({
       identifier: REST_ID,
@@ -146,7 +196,7 @@ async function syncRest(timer: RestTimer) {
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: timer.endsAt,
-        channelId: REST_CHANNELS[mode],
+        channelId,
         delivery: "alarmClock",
       },
     });

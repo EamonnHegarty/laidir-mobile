@@ -12,6 +12,7 @@ import {
   kindOf,
   scheduleWorkoutReminder,
   setRestAlertMode,
+  setRestRingOnSilent,
 } from "./rest-alert";
 import { restTimer } from "./rest-timer";
 import { RestWatcher } from "./timers";
@@ -26,17 +27,21 @@ import { RestWatcher } from "./timers";
  */
 export function WorkoutBackground() {
   const query = useLiveQuery(async (r) => {
-    const [active, restAlert, reminder] = await Promise.all([
+    const [active, restAlert, reminder, ringOnSilent] = await Promise.all([
       r.workouts.getActive(),
       r.settings.restAlert(),
       r.settings.workoutReminder(),
+      r.settings.restRingOnSilent(),
     ]);
-    return { active: active ? { name: active.name } : null, restAlert, reminder };
+    return { active: active ? { name: active.name } : null, restAlert, reminder, ringOnSilent };
   }, []);
   const state = useRef(query.data);
   useEffect(() => {
     state.current = query.data;
-    if (query.data) setRestAlertMode(query.data.restAlert);
+    if (query.data) {
+      setRestAlertMode(query.data.restAlert);
+      setRestRingOnSilent(query.data.ringOnSilent);
+    }
     if (query.data && (!query.data.active || !query.data.reminder)) cancelWorkoutReminder();
   }, [query.data]);
 

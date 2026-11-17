@@ -150,6 +150,16 @@ export function settingsRepo({ db, clock }: { db: Db; clock: Clock }) {
       await writeLocal(db, REMINDER_KEY, on);
     },
 
+    /** Whether "Rest over" rings even with the phone on silent (like a timer). Device-only; on by default. */
+    async restRingOnSilent(): Promise<boolean> {
+      const value = await readLocal(db, RING_ON_SILENT_KEY);
+      return typeof value === "boolean" ? value : true;
+    },
+
+    async setRestRingOnSilent(on: boolean): Promise<void> {
+      await writeLocal(db, RING_ON_SILENT_KEY, on);
+    },
+
     /** Whether the one-time "allow exact rest alerts" prompt has been shown. Device-only. */
     async exactAlarmAsked(): Promise<boolean> {
       return (await readLocal(db, EXACT_ALARM_ASKED_KEY)) === true;
@@ -195,6 +205,7 @@ const APPEARANCE_KEY = "local_appearance";
 const REST_ALERT_KEY = "local_rest_alert";
 const REMINDER_KEY = "local_workout_reminder";
 const EXACT_ALARM_ASKED_KEY = "local_exact_alarm_asked";
+const RING_ON_SILENT_KEY = "local_rest_ring_on_silent";
 
 export const REST_ALERTS = ["both", "sound", "vibrate", "silent"] as const;
 export type RestAlert = (typeof REST_ALERTS)[number];
