@@ -23,7 +23,7 @@ type Loaded = {
   settings: Settings;
 };
 
-/** Fix a finished session: weights, reps, sets, exercises, name. */
+/** Fix a finished session: weights, reps, sets, exercises, name, note. */
 export default function EditSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const query = useLiveQuery(
@@ -61,14 +61,15 @@ function Editor({ initial }: { initial: Loaded }) {
   const repos = useRepositories();
   const { workout, routine, custom, settings } = initial;
   const [name, setName] = useState(workout.name);
+  const [notes, setNotes] = useState(workout.notes ?? "");
   const [exercises, setExercises] = useState<WorkoutExercise[]>(workout.exercises);
   const [dirty, setDirty] = useState(false);
   const [problem, setProblem] = useState<string>();
 
-  const latest = useRef({ name, exercises });
+  const latest = useRef({ name, notes, exercises });
   useEffect(() => {
-    latest.current = { name, exercises };
-  }, [name, exercises]);
+    latest.current = { name, notes, exercises };
+  }, [name, notes, exercises]);
 
   const changeExercises = (update: (current: WorkoutExercise[]) => WorkoutExercise[]) => {
     setExercises(update);
@@ -94,7 +95,7 @@ function Editor({ initial }: { initial: Loaded }) {
       try {
         await repos.workouts.save(workout.id, {
           name: current.name.trim() ? current.name : workout.name,
-          notes: workout.notes,
+          notes: current.notes,
           exercises: cleaned,
         });
         setDirty(false);
@@ -128,6 +129,11 @@ function Editor({ initial }: { initial: Loaded }) {
           )
         }
         header={problem ? <Label tone="danger">{problem}</Label> : undefined}
+        workoutNotes={notes}
+        onWorkoutNotes={(next) => {
+          setNotes(next);
+          setDirty(true);
+        }}
       />
     </Screen>
   );

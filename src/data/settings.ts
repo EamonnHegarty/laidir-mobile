@@ -160,6 +160,17 @@ export function settingsRepo({ db, clock }: { db: Db; clock: Clock }) {
       await writeLocal(db, RING_ON_SILENT_KEY, on);
     },
 
+    /** Which sound the app plays when a rest is over. Device-only. */
+    async restSound(): Promise<RestSound> {
+      const value = await readLocal(db, REST_SOUND_KEY);
+      return isRestSound(value) ? value : DEFAULT_REST_SOUND;
+    },
+
+    async setRestSound(sound: RestSound): Promise<void> {
+      if (!isRestSound(sound)) throw new RangeError(`Unknown rest sound ${String(sound)}`);
+      await writeLocal(db, REST_SOUND_KEY, sound);
+    },
+
     /** Whether the one-time "allow exact rest alerts" prompt has been shown. Device-only. */
     async exactAlarmAsked(): Promise<boolean> {
       return (await readLocal(db, EXACT_ALARM_ASKED_KEY)) === true;
@@ -206,6 +217,14 @@ const REST_ALERT_KEY = "local_rest_alert";
 const REMINDER_KEY = "local_workout_reminder";
 const EXACT_ALARM_ASKED_KEY = "local_exact_alarm_asked";
 const RING_ON_SILENT_KEY = "local_rest_ring_on_silent";
+const REST_SOUND_KEY = "local_rest_sound";
+
+export const REST_SOUNDS = ["beeps", "bell", "chime", "buzzer"] as const;
+export type RestSound = (typeof REST_SOUNDS)[number];
+export const DEFAULT_REST_SOUND: RestSound = "beeps";
+export function isRestSound(value: unknown): value is RestSound {
+  return typeof value === "string" && (REST_SOUNDS as readonly string[]).includes(value);
+}
 
 export const REST_ALERTS = ["both", "sound", "vibrate", "silent"] as const;
 export type RestAlert = (typeof REST_ALERTS)[number];

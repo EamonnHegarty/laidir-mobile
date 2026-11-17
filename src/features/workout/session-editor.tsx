@@ -55,6 +55,9 @@ export type SessionEditorProps = {
   onShowExercise?: (ref: string) => void;
   /** Shown as a Discard button at the bottom when given (the live session). */
   onDiscard?: () => void;
+  /** The session's own note (Workout.notes). With `onWorkoutNotes` it can be written or edited. */
+  workoutNotes?: string;
+  onWorkoutNotes?: (notes: string) => void;
   /** Live session: ticking a set vibrates and starts the rest timer. Off when editing history. */
   live?: boolean;
   header?: React.ReactNode;
@@ -100,6 +103,8 @@ function SessionBody({
   onAddExercises,
   onShowExercise,
   onDiscard,
+  workoutNotes,
+  onWorkoutNotes,
   live = true,
   header,
   onReorder,
@@ -109,7 +114,8 @@ function SessionBody({
   const [menuFor, setMenuFor] = useState<number | null>(null);
   // The exercise whose note is open in the note editor.
   const [noteFor, setNoteFor] = useState<number | null>(null);
-  const notes = routine?.notes;
+  const planNotes = routine?.notes;
+  const [editingWorkoutNote, setEditingWorkoutNote] = useState(false);
 
   const restOf = (exercise: WorkoutExercise, index: number) => {
     const fallback =
@@ -141,12 +147,30 @@ function SessionBody({
         maxLength={100}
         style={styles.name}
       />
-      {notes ? (
+      {planNotes ? (
         <View style={[styles.notes, { borderLeftColor: theme.tint }]}>
           <Label tone="secondary" size="small">
-            {notes}
+            {planNotes}
           </Label>
         </View>
+      ) : null}
+      {onWorkoutNotes ? (
+        <Pressable
+          onPress={() => {
+            Keyboard.dismiss();
+            setEditingWorkoutNote(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={
+            workoutNotes ? `Workout note: ${workoutNotes}. Edit note` : "Add a workout note"
+          }
+          style={({ pressed }) => [styles.note, pressed && { opacity: 0.6 }]}
+        >
+          <Icon name="edit_note" size={18} color={theme.tint} />
+          <Label tone={workoutNotes ? "secondary" : "tint"} size="small" style={styles.flex}>
+            {workoutNotes || "Add a workout note"}
+          </Label>
+        </Pressable>
       ) : null}
 
       {exercises.map((exercise, index) => {
@@ -158,7 +182,6 @@ function SessionBody({
         const last = previous.get(exercise.exercise_id) ?? [];
         const hints = setHints(exercise.sets, last, template);
         const rest = restOf(exercise, index).seconds;
-        let working = 0;
 
         return (
           <View
@@ -220,12 +243,11 @@ function SessionBody({
             <LogSetHeader tracking={info.tracking} units={settings} />
 
             {exercise.sets.map((set, setIndex) => {
-              if (set.set_type !== "warmup") working++;
               const lastSet = last[setIndex];
               return (
                 <LogSetRow
                   key={setIndex}
-                  number={working}
+                  number={setIndex + 1}
                   set={set}
                   tracking={info.tracking}
                   hint={hints[setIndex] ?? {}}
@@ -293,6 +315,17 @@ function SessionBody({
           fallback={editingRest.fallback}
           onChoose={(seconds) => onExerciseRest(editing.exercise_id, seconds)}
           onClose={() => setRestFor(null)}
+        />
+      ) : null}
+
+      {editingWorkoutNote && onWorkoutNotes ? (
+        <NoteEditor
+          title="Workout note"
+          exerciseName={name}
+          initial={workoutNotes ?? ""}
+          placeholder="How it went, how you felt…"
+          onSave={onWorkoutNotes}
+          onClose={() => setEditingWorkoutNote(false)}
         />
       ) : null}
 
