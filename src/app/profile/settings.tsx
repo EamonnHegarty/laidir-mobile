@@ -1,11 +1,13 @@
 import Constants from "expo-constants";
+import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { Alert, RefreshControl, ScrollView, StyleSheet, Switch, View } from "react-native";
 
 import { CommitField } from "@/components/commit-field";
 import { RowGroup, Segmented } from "@/components/glas";
 import { Icon } from "@/components/icon";
 import { Chip, ChipGrid, Label, Row, Screen, SectionHeader } from "@/components/ui";
+import { PRIVACY_URL, SUPPORT_URL } from "@/constants/links";
 import { type Appearance, APPEARANCES, Spacing } from "@/constants/theme";
 import { CATALOGUE_VERSION } from "@/data/catalogue";
 import { useLiveQuery, useRepositories } from "@/data/database-provider";
@@ -15,6 +17,7 @@ import { AccountSection } from "@/features/settings/account-section";
 import { shareBackup } from "@/features/settings/backup";
 import { ExactAlarmRow } from "@/features/settings/exact-alarm-row";
 import { formatDuration } from "@/lib/units";
+import { useSync } from "@/sync/sync-provider";
 
 import contract from "../../../contract.json";
 
@@ -35,17 +38,29 @@ export default function SettingsScreen() {
   const repos = useRepositories();
   const [exporting, setExporting] = useState(false);
   const query = useLiveQuery(async (r) => {
-    const [settings, displayName, accent, appearance, restAlert, reminder] = await Promise.all([
-      r.settings.get(),
-      r.settings.displayName(),
-      r.settings.accent(),
-      r.settings.appearance(),
-      r.settings.restAlert(),
-      r.settings.workoutReminder(),
-    ]);
-    return { settings, displayName, accent, appearance, restAlert, reminder };
+    const [settings, displayName, accent, appearance, restAlert, reminder, ringOnSilent] =
+      await Promise.all([
+        r.settings.get(),
+        r.settings.displayName(),
+        r.settings.accent(),
+        r.settings.appearance(),
+        r.settings.restAlert(),
+        r.settings.workoutReminder(),
+        r.settings.restRingOnSilent(),
+      ]);
+    return { settings, displayName, accent, appearance, restAlert, reminder, ringOnSilent };
   }, []);
   const update = (changes: Partial<Settings>) => void repos.settings.update(changes);
+  const { controller: sync } = useSync();
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = async () => {
+    setRefreshing(true);
+    try {
+      await sync.syncNow({ force: true });
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const variant = (Constants.expoConfig?.extra as { variant?: string } | undefined)?.variant;
 
   const exportBackup = async () => {
@@ -60,11 +75,19 @@ export default function SettingsScreen() {
   };
 
   if (!query.data) return <Screen />;
-  const { settings, displayName, accent, appearance, restAlert, reminder } = query.data;
+  const { settings, displayName, accent, appearance, restAlert, reminder, ringOnSilent } =
+    query.data;
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          // Pull down to back up now (when signed in). Syncing is otherwise automatic.
+          <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />
+        }
+      >
         <AccountSection />
 
         <SectionHeader>Profile</SectionHeader>
@@ -158,6 +181,20 @@ export default function SettingsScreen() {
           ))}
         </Choice>
         <RowGroup style={styles.group}>
+          {restAlert === "both" || restAlert === "sound" ? (
+            <Row
+              title="Ring even on silent"
+              subtitle="Like a timer: uses the alarm/media volume when the phone is on silent"
+              onPress={() => void repos.settings.setRestRingOnSilent(!ringOnSilent)}
+              right={
+                <Switch
+                  value={ringOnSilent}
+                  onValueChange={(on) => void repos.settings.setRestRingOnSilent(on)}
+                  accessibilityLabel="Ring even on silent"
+                />
+              }
+            />
+          ) : null}
           <ExactAlarmRow />
         </RowGroup>
         <Label tone="secondary" size="small" style={styles.note}>
@@ -184,8 +221,8 @@ export default function SettingsScreen() {
         <SectionHeader>Data</SectionHeader>
         <RowGroup style={styles.group}>
           <Row
-            title={exporting ? "Exporting…" : "Export backup (JSON)"}
-            subtitle="Everything on this phone, as one file to save or send"
+            title={exporting ? "Exporting…" : "Download my data (JSON)"}
+            subtitle="All your workouts, programs, exercises and settings, as one file to save or send"
             onPress={exporting ? undefined : () => void exportBackup()}
             right={<Icon name="ios_share" />}
           />
@@ -209,6 +246,16 @@ export default function SettingsScreen() {
           <Row
             title="Data contract"
             right={<Label tone="secondary">laidir-api {contract.ref.slice(0, 7)}</Label>}
+          />
+          <Row
+            title="Privacy policy"
+            onPress={() => void WebBrowser.openBrowserAsync(PRIVACY_URL)}
+            right={<Icon name="open_in_new" />}
+          />
+          <Row
+            title="Help & support"
+            onPress={() => void WebBrowser.openBrowserAsync(SUPPORT_URL)}
+            right={<Icon name="open_in_new" />}
           />
         </RowGroup>
         <Label tone="secondary" size="small" style={styles.note}>

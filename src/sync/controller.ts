@@ -34,7 +34,7 @@ export type SyncState =
 
 export interface SyncControllerDeps {
   session: AuthSession;
-  api: SyncApi & { profile(): Promise<Profile | undefined> };
+  api: SyncApi & { profile(): Promise<Profile | undefined>; deleteAccount(): Promise<void> };
   repo: SyncRepo;
   signIn: () => Promise<
     | { type: "success"; account: SessionAccount }
@@ -223,6 +223,22 @@ export function createSyncController(deps: SyncControllerDeps) {
       timer = null;
       await deps.signOut();
       set({ kind: "signed-out" });
+    },
+
+    /**
+     * Deletes the account and everything backed up (server signs out every device), then erases
+     * the synced data on this phone and signs out. Throws (state unchanged) if the server call fails,
+     * so the user can try again.
+     */
+    async deleteAccount(): Promise<void> {
+      if (state.kind !== "signed-in") return;
+      if (timer !== null) clearTimer(timer);
+      timer = null;
+      await running;
+      await deps.api.deleteAccount();
+      await deps.repo.eraseSyncedData();
+      await deps.signOut().catch(() => undefined);
+      set({ kind: "signed-out", message: "Your account and backed-up data were deleted." });
     },
 
     /** Mismatch: erase this phone's synced data, link it to the new account, then download. */

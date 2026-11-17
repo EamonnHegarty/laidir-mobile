@@ -32,6 +32,7 @@ function fakeRepositories() {
       changes.notify();
     },
     workoutReminder: async () => true,
+    restRingOnSilent: async () => true,
     accent: async () => accent,
     setAccent: async (next: string) => {
       accent = next;
