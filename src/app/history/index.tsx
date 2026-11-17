@@ -13,6 +13,7 @@ import { formatHours, formatTotalWeight } from "@/features/stats/format";
 import { bucketStart, prCountByWorkout, totals } from "@/features/stats/model";
 import { useStats } from "@/features/stats/use-stats";
 import { formatSet } from "@/lib/format-set";
+import { useSyncOnFocus, useSyncRefresh } from "@/sync/sync-provider";
 
 const PAGE = 30;
 const weekday = new Intl.DateTimeFormat(undefined, { weekday: "short" });
@@ -31,6 +32,8 @@ export default function HistoryScreen() {
     [limit],
   );
   const stats = useStats();
+  const { refreshing, onRefresh } = useSyncRefresh();
+  useSyncOnFocus();
 
   const header = <PageHeader title="History" />;
   if (!query.data || !stats.data) return <Screen>{header}</Screen>;
@@ -64,6 +67,8 @@ export default function HistoryScreen() {
         sections={groupByMonth(sessions)}
         keyExtractor={(w) => w.id}
         stickySectionHeadersEnabled={false}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
         onEndReachedThreshold={0.5}
         onEndReached={() => {
           if (sessions.length === limit) setLimit(limit + PAGE);
