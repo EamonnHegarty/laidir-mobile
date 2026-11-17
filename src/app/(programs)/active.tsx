@@ -88,8 +88,7 @@ function ActiveSession({ initial }: { initial: Loaded }) {
   const repos = useRepositories();
   const { workout, routine, custom, settings } = initial;
   const [name, setName] = useState(workout.name);
-  // Notes aren't editable in the session screen for now; keep whatever is stored.
-  const notes = workout.notes ?? "";
+  const [notes, setNotes] = useState(workout.notes ?? "");
   const [exercises, setExercises] = useState<WorkoutExercise[]>(workout.exercises);
   const [previous, setPrevious] = useState(initial.previous);
   const [exerciseRest, setExerciseRest] = useState(initial.exerciseRest);
@@ -246,6 +245,8 @@ function ActiveSession({ initial }: { initial: Loaded }) {
         onAddExercises={addFromPicker}
         onShowExercise={(ref) => router.push({ pathname: "/exercise-history", params: { ref } })}
         onDiscard={discard}
+        workoutNotes={notes}
+        onWorkoutNotes={setNotes}
       />
       <RestOverlay />
     </Screen>

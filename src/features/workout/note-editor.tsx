@@ -14,12 +14,17 @@ import { MAX_NOTE } from "./session";
  * the note); Cancel, the back button or a tap outside leaves it unchanged.
  */
 export function NoteEditor({
+  title = "Note",
   exerciseName,
   initial,
+  placeholder = "e.g. seat on 4",
   onSave,
   onClose,
 }: {
+  title?: string;
+  /** Shown under the title: the exercise (or workout) the note belongs to. */
   exerciseName: string;
+  placeholder?: string;
   initial: string;
   onSave: (text: string) => void;
   onClose: () => void;
@@ -40,14 +45,14 @@ export function NoteEditor({
             { backgroundColor: theme.background, paddingTop: insets.top + Spacing.three },
           ]}
         >
-          <Label size="heading">Note</Label>
+          <Label size="heading">{title}</Label>
           <Label tone="secondary">{exerciseName}</Label>
           <Field
             autoFocus
             value={text}
             onChangeText={setText}
-            placeholder="e.g. seat on 4"
-            accessibilityLabel={`Note for ${exerciseName}`}
+            placeholder={placeholder}
+            accessibilityLabel={title === "Note" ? `Note for ${exerciseName}` : title}
             maxLength={MAX_NOTE}
             multiline
             scrollEnabled
