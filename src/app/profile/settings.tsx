@@ -12,11 +12,12 @@ import { PRIVACY_URL, SUPPORT_URL } from "@/constants/links";
 import { type Appearance, APPEARANCES, Spacing } from "@/constants/theme";
 import { CATALOGUE_VERSION } from "@/data/catalogue";
 import { useLiveQuery, useRepositories } from "@/data/database-provider";
-import { type RestAlert, REST_ALERTS, type Settings } from "@/data/settings";
+import { type RestAlert, REST_ALERTS, REST_SOUNDS, type Settings } from "@/data/settings";
 import { AccentPicker } from "@/features/settings/accent-picker";
 import { AccountSection } from "@/features/settings/account-section";
 import { shareBackup } from "@/features/settings/backup";
 import { ExactAlarmRow } from "@/features/settings/exact-alarm-row";
+import { playRestSound, REST_SOUND_LABELS } from "@/features/workout/rest-sound";
 import { formatDuration } from "@/lib/units";
 import { useSync } from "@/sync/sync-provider";
 
@@ -39,7 +40,7 @@ export default function SettingsScreen() {
   const repos = useRepositories();
   const [exporting, setExporting] = useState(false);
   const query = useLiveQuery(async (r) => {
-    const [settings, displayName, accent, appearance, restAlert, reminder, ringOnSilent] =
+    const [settings, displayName, accent, appearance, restAlert, reminder, ringOnSilent, sound] =
       await Promise.all([
         r.settings.get(),
         r.settings.displayName(),
@@ -48,8 +49,18 @@ export default function SettingsScreen() {
         r.settings.restAlert(),
         r.settings.workoutReminder(),
         r.settings.restRingOnSilent(),
+        r.settings.restSound(),
       ]);
-    return { settings, displayName, accent, appearance, restAlert, reminder, ringOnSilent };
+    return {
+      settings,
+      displayName,
+      accent,
+      appearance,
+      restAlert,
+      reminder,
+      ringOnSilent,
+      sound,
+    };
   }, []);
   const update = (changes: Partial<Settings>) => void repos.settings.update(changes);
   const { controller: sync } = useSync();
@@ -76,8 +87,9 @@ export default function SettingsScreen() {
   };
 
   if (!query.data) return <Screen />;
-  const { settings, displayName, accent, appearance, restAlert, reminder, ringOnSilent } =
+  const { settings, displayName, accent, appearance, restAlert, reminder, ringOnSilent, sound } =
     query.data;
+  const audible = restAlert === "both" || restAlert === "sound";
 
   return (
     <Screen>
@@ -181,8 +193,28 @@ export default function SettingsScreen() {
             />
           ))}
         </Choice>
+        {audible ? (
+          <>
+            <Label tone="secondary" size="small" style={styles.note}>
+              Sound (tap to hear it)
+            </Label>
+            <Choice>
+              {REST_SOUNDS.map((choice) => (
+                <Chip
+                  key={choice}
+                  label={REST_SOUND_LABELS[choice]}
+                  selected={sound === choice}
+                  onPress={() => {
+                    void repos.settings.setRestSound(choice);
+                    void playRestSound(choice);
+                  }}
+                />
+              ))}
+            </Choice>
+          </>
+        ) : null}
         <RowGroup style={styles.group}>
-          {restAlert === "both" || restAlert === "sound" ? (
+          {audible ? (
             <Row
               title="Ring even on silent"
               subtitle="Like a timer: uses the alarm/media volume when the phone is on silent"
@@ -199,8 +231,10 @@ export default function SettingsScreen() {
           <ExactAlarmRow />
         </RowGroup>
         <Label tone="secondary" size="small" style={styles.note}>
-          Rings with the screen locked or the app in the background too. Each exercise&apos;s rest
-          is set from the timer chip on its card during a workout.
+          Rings with the screen locked or the app in the background too. The sound you pick plays
+          while Láidir is open with &quot;Ring even on silent&quot; on; otherwise your phone&apos;s
+          notification sound is used. Each exercise&apos;s rest is set from the timer chip on its
+          card during a workout.
         </Label>
 
         <SectionHeader>Unfinished workout</SectionHeader>

@@ -11,6 +11,11 @@ import { SyncControllerProvider } from "@/sync/sync-provider";
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
 jest.mock("expo-file-system", () => ({}));
 jest.mock("expo-sharing", () => ({}));
+const mockPlay = jest.fn();
+jest.mock("expo-audio", () => ({
+  setAudioModeAsync: async () => {},
+  createAudioPlayer: () => ({ play: mockPlay, pause: () => {}, seekTo: async () => {} }),
+}));
 
 /** Just enough of the repositories for the Settings screen, kept in memory. */
 function fakeRepositories() {
@@ -19,6 +24,7 @@ function fakeRepositories() {
   let name: string | undefined;
   let accent = "glas";
   let restAlert = "both";
+  let restSound = "beeps";
   const settings = {
     displayName: async () => name,
     setDisplayName: async (next: string | null) => {
@@ -33,6 +39,11 @@ function fakeRepositories() {
     },
     workoutReminder: async () => true,
     restRingOnSilent: async () => true,
+    restSound: async () => restSound,
+    setRestSound: async (next: string) => {
+      restSound = next;
+      changes.notify();
+    },
     accent: async () => accent,
     setAccent: async (next: string) => {
       accent = next;
@@ -51,6 +62,7 @@ function fakeRepositories() {
     name: () => name,
     accent: () => accent,
     restAlert: () => restAlert,
+    restSound: () => restSound,
   };
 }
 
@@ -82,6 +94,17 @@ describe("Settings screen", () => {
     await renderSettings(fakeRepositories(), sync);
     await fireEvent.press(await screen.findByRole("button", { name: /Sign in to back up/ }));
     expect(sync.signIn).toHaveBeenCalled();
+  });
+
+  it("picks the rest sound and plays it as a preview", async () => {
+    const fake = fakeRepositories();
+    await renderSettings(fake);
+    expect(await screen.findByRole("button", { name: "Beeps" })).toBeSelected();
+    await fireEvent.press(screen.getByRole("button", { name: "Boxing bell" }));
+    expect(fake.restSound()).toBe("bell");
+    expect(await screen.findByRole("button", { name: "Boxing bell" })).toBeSelected();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(mockPlay).toHaveBeenCalled();
   });
 
   it("switches units, default rest and display name, and saves them", async () => {
