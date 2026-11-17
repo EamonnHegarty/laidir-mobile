@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
 import { Alert, RefreshControl, ScrollView, StyleSheet, Switch, View } from "react-native";
@@ -225,6 +226,16 @@ export default function SettingsScreen() {
             subtitle="All your workouts, programs, exercises and settings, as one file to save or send"
             onPress={exporting ? undefined : () => void exportBackup()}
             right={<Icon name="ios_share" />}
+          />
+        </RowGroup>
+
+        <SectionHeader>Claude</SectionHeader>
+        <RowGroup style={styles.group}>
+          <Row
+            title="Connect Claude"
+            subtitle="Ask Claude about your training, using your Láidir data"
+            onPress={() => router.push("/profile/claude")}
+            right={<Icon name="chevron_right" />}
           />
         </RowGroup>
 

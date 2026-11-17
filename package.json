@@ -78,5 +78,19 @@
     "openapi-typescript": "^7.13.0",
     "prettier": "^3.10.1",
     "typescript": "~6.0.3"
+  },
+  "expo": {
+    "install": {
+      "exclude": [
+        "expo",
+        "expo-auth-session",
+        "expo-dev-client",
+        "expo-file-system",
+        "expo-router",
+        "expo-sqlite",
+        "expo-web-browser",
+        "jest-expo"
+      ]
+    }
   }
 }

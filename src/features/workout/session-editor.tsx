@@ -18,12 +18,12 @@ import { tapConfirm } from "@/lib/haptics";
 import { useTheme } from "@/hooks/use-theme";
 
 import { ExerciseMenu } from "./exercise-menu";
+import { NoteEditor } from "./note-editor";
 import { RestPicker, restLabel } from "./rest-picker";
 import { restTimer } from "./rest-timer";
 import {
   addSet,
   MAX_EXERCISES,
-  MAX_NOTE,
   MAX_SETS,
   moveExercise,
   removeExercise,
@@ -107,7 +107,7 @@ function SessionBody({
   const theme = useTheme();
   const [restFor, setRestFor] = useState<number | null>(null);
   const [menuFor, setMenuFor] = useState<number | null>(null);
-  // The exercise whose note is being written (shown as a field until you leave it).
+  // The exercise whose note is open in the note editor.
   const [noteFor, setNoteFor] = useState<number | null>(null);
   const notes = routine?.notes;
 
@@ -123,6 +123,7 @@ function SessionBody({
   const editing = restFor === null ? undefined : exercises[restFor];
   const editingRest = editing && restFor !== null ? restOf(editing, restFor) : undefined;
   const menuExercise = menuFor === null ? undefined : exercises[menuFor];
+  const noteExercise = noteFor === null ? undefined : exercises[noteFor];
 
   return (
     <ScrollView
@@ -202,22 +203,7 @@ function SessionBody({
               />
             </View>
 
-            {noteFor === index ? (
-              <Field
-                autoFocus
-                defaultValue={exercise.notes ?? ""}
-                placeholder="e.g. seat on 4"
-                accessibilityLabel={`Note for ${info.name}`}
-                maxLength={MAX_NOTE}
-                multiline
-                onEndEditing={(e) => {
-                  const text = e.nativeEvent.text;
-                  onExercises((cur) => setNote(cur, index, text));
-                  setNoteFor(null);
-                }}
-                style={styles.noteField}
-              />
-            ) : exercise.notes ? (
+            {exercise.notes ? (
               <Pressable
                 onPress={() => setNoteFor(index)}
                 accessibilityRole="button"
@@ -310,6 +296,15 @@ function SessionBody({
         />
       ) : null}
 
+      {noteExercise && noteFor !== null ? (
+        <NoteEditor
+          exerciseName={nameOf(noteExercise)}
+          initial={noteExercise.notes ?? ""}
+          onSave={(text) => onExercises((cur) => setNote(cur, noteFor, text))}
+          onClose={() => setNoteFor(null)}
+        />
+      ) : null}
+
       {menuExercise && menuFor !== null ? (
         <ExerciseMenu
           title={nameOf(menuExercise)}
@@ -364,7 +359,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.one,
     paddingVertical: Spacing.one,
   },
-  noteField: { fontSize: 14, marginVertical: Spacing.one },
   addSet: {
     flexDirection: "row",
     alignItems: "center",
