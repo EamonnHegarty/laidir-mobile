@@ -1,6 +1,14 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
 import { Card, DashedButton, IconAction, PageHeader, Pill, PillRow } from "@/components/glas";
 import { Icon } from "@/components/icon";
@@ -10,12 +18,15 @@ import { Spacing } from "@/constants/theme";
 import { describeExercise } from "@/data/catalogue";
 import type { Exercise, Routine, RoutineFolder, Timestamp, Workout } from "@/data/contract";
 import { useLiveQuery, useRepositories } from "@/data/database-provider";
+import { useMoveWorkout } from "@/features/routines/use-move-workout";
 import { formatHours, formatTotalWeight } from "@/features/stats/format";
 import { nextUpByFolder } from "@/features/stats/model";
 import { summarise } from "@/features/workout/session";
 import { restTimer } from "@/features/workout/rest-timer";
 import { startSession } from "@/features/workout/start";
 import { ElapsedTime } from "@/features/workout/timers";
+import { ExerciseMenu } from "@/features/workout/exercise-menu";
+import { useSyncOnFocus, useSyncRefresh } from "@/sync/sync-provider";
 import { useTheme } from "@/hooks/use-theme";
 import { relativeDay } from "@/lib/relative-day";
 
@@ -32,6 +43,11 @@ export default function ProgramsScreen() {
   const repos = useRepositories();
   const { width } = useWindowDimensions();
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  // The ⋯ menu of one workout card.
+  const [menuFor, setMenuFor] = useState<Routine | null>(null);
+  const mover = useMoveWorkout();
+  const { refreshing, onRefresh } = useSyncRefresh();
+  useSyncOnFocus();
   // Long-press a workout card to drag that program's workouts into a new order.
   const [reordering, setReordering] = useState<{
     folderId?: string;
@@ -76,6 +92,15 @@ export default function ProgramsScreen() {
       else next.add(key);
       return next;
     });
+  const confirmDelete = (routine: Routine) =>
+    Alert.alert(`Delete ${routine.name}?`, "Sessions you logged from it stay in History.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => void repos.routines.remove(routine.id),
+      },
+    ]);
   const showNewMenu = () =>
     Alert.alert("Create", undefined, [
       { text: "New program", onPress: newFolder },
@@ -141,7 +166,10 @@ export default function ProgramsScreen() {
   return (
     <Screen>
       {header}
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {active ? (
           <ResumeBanner
             workout={active}
@@ -236,6 +264,7 @@ export default function ProgramsScreen() {
                             router.push({ pathname: "/routines/[id]", params: { id: routine.id } })
                           }
                           onStart={() => start(routine)}
+                          onMore={() => setMenuFor(routine)}
                           onReorder={
                             group.routines.length > 1
                               ? () =>
@@ -256,6 +285,30 @@ export default function ProgramsScreen() {
           })
         )}
       </ScrollView>
+      {menuFor ? (
+        <ExerciseMenu
+          title={menuFor.name}
+          onClose={() => setMenuFor(null)}
+          actions={[
+            { label: "Start", icon: "play_arrow", onPress: () => start(menuFor) },
+            {
+              label: "Edit",
+              icon: "edit",
+              onPress: () =>
+                router.push({ pathname: "/routines/edit", params: { id: menuFor.id } }),
+            },
+            { label: "Move to…", icon: "drive_file_move", onPress: () => mover.open(menuFor) },
+            {
+              label: "Delete",
+              icon: "delete",
+              danger: true,
+              onPress: () => confirmDelete(menuFor),
+            },
+          ]}
+        />
+      ) : null}
+      {mover.sheet}
+      {mover.toast}
     </Screen>
   );
 }
@@ -334,6 +387,7 @@ function WorkoutCard({
   width,
   onPress,
   onStart,
+  onMore,
   onReorder,
 }: {
   routine: Routine;
@@ -343,6 +397,7 @@ function WorkoutCard({
   width: number;
   onPress: () => void;
   onStart: () => void;
+  onMore: () => void;
   onReorder?: () => void;
 }) {
   const theme = useTheme();
@@ -378,9 +433,15 @@ function WorkoutCard({
       </PillRow>
       <View style={styles.lastDone}>
         <Icon name="schedule" size={14} color={theme.textSecondary} />
-        <Label tone="secondary" size="small">
+        <Label tone="secondary" size="small" style={styles.flex} numberOfLines={1}>
           {lastDone ? relativeDay(lastDone) : "Not done yet"}
         </Label>
+        <IconAction
+          icon="more_horiz"
+          label={`More for ${routine.name}`}
+          size={20}
+          onPress={onMore}
+        />
       </View>
     </Card>
   );
@@ -408,7 +469,13 @@ const styles = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", gap: GAP },
   card: { minHeight: 150 },
   cardTop: { flexDirection: "row", alignItems: "flex-start", marginRight: -8, marginTop: -6 },
-  lastDone: { flexDirection: "row", alignItems: "center", gap: 4 },
+  lastDone: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginRight: -8,
+    marginBottom: -6,
+  },
   banner: { flexDirection: "row", alignItems: "center", gap: Spacing.two },
   bannerMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
   resume: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },

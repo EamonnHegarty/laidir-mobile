@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
 
-import { Pill, PillRow, RowGroup } from "@/components/glas";
+import { RowGroup } from "@/components/glas";
 import {
   Button,
   EmptyState,
@@ -15,6 +15,7 @@ import { Spacing } from "@/constants/theme";
 import { describeExercise } from "@/data/catalogue";
 import { useLiveQuery, useRepositories } from "@/data/database-provider";
 import { setSummary } from "@/features/routines/draft";
+import { useMoveWorkout } from "@/features/routines/use-move-workout";
 import { startSession } from "@/features/workout/start";
 import { formatDuration } from "@/lib/units";
 
@@ -22,6 +23,7 @@ export default function RoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const repos = useRepositories();
+  const mover = useMoveWorkout();
   const query = useLiveQuery(
     async (r) => {
       const routine = await r.routines.get(id);
@@ -75,16 +77,21 @@ export default function RoutineScreen() {
         }}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        {folder || routine.notes ? (
+        {routine.notes ? (
           <View style={styles.summary}>
-            {folder ? (
-              <PillRow>
-                <Pill icon="list_alt" label={folder.name} />
-              </PillRow>
-            ) : null}
-            {routine.notes ? <Label>{routine.notes}</Label> : null}
+            <Label>{routine.notes}</Label>
           </View>
         ) : null}
+
+        <RowGroup style={[styles.group, styles.programRow]}>
+          <Row
+            title="Program"
+            subtitle={folder ? folder.name : "Not in a program"}
+            onPress={() => mover.open(routine)}
+            accessibilityLabel={`Program: ${folder ? folder.name : "none"}. Move to another program`}
+            right={<Label tone="tint">Move to…</Label>}
+          />
+        </RowGroup>
 
         <SectionHeader>Exercises</SectionHeader>
         {routine.exercises.length === 0 ? (
@@ -126,6 +133,8 @@ export default function RoutineScreen() {
           <Button title="Delete workout" tone="plain" onPress={confirmDelete} />
         </View>
       </ScrollView>
+      {mover.sheet}
+      {mover.toast}
     </Screen>
   );
 }
@@ -135,4 +144,5 @@ const styles = StyleSheet.create({
   summary: { padding: Spacing.three, gap: Spacing.one },
   actions: { padding: Spacing.three, gap: Spacing.two },
   group: { marginHorizontal: Spacing.three },
+  programRow: { marginTop: Spacing.two },
 });
