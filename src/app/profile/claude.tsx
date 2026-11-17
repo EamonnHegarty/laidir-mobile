@@ -10,11 +10,12 @@ const STEPS = [
   "In Claude, open Settings → Connectors and choose Add custom connector.",
   "Name it Láidir and paste the connector URL below.",
   "Open Advanced settings and paste the client ID below. Leave the client secret empty.",
-  "Choose Add, then Connect, and sign in with your Láidir account.",
+  "Choose Add. Claude then shows “Connection issue… Reconnect”: tap Reconnect and sign in with your Láidir account.",
 ];
 
 const PROMPTS = [
-  "What routines do I have in Láidir?",
+  "What programs and workouts do I have in Láidir?",
+  "Make me a Push Pull Legs program in Láidir.",
   "How has my bench press gone over the last two months?",
   "Summarise my workouts this week.",
   "Which muscles have I trained least lately?",
