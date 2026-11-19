@@ -3,12 +3,13 @@ import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeabl
 
 import { Icon } from "@/components/icon";
 import { LiveField } from "@/components/live-field";
+import { TimerField } from "@/components/timer-field";
 import { Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
 import type { Tracking, WorkoutSet } from "@/data/contract";
 import type { Settings } from "@/data/settings";
 import { useTheme } from "@/hooks/use-theme";
-import { durationInput, parseDecimal, parseDuration, parseWhole } from "@/lib/parse";
+import { durationInput, parseDecimal, parseWhole } from "@/lib/parse";
 import { displayNumber, kgToUnit, unitToKg } from "@/lib/units";
 
 import { fieldsFor } from "./session";
@@ -98,18 +99,18 @@ export function LogSetRow({
         );
       case "duration_s":
         return (
-          <LiveField
+          // Phone-timer entry: digits fill from the right, so 1000 is 10:00 and 130 is 1:30.
+          <TimerField
             key={key}
-            value={set.duration_s}
-            format={durationInput}
-            parse={(text) => {
-              const v = parseDuration(text);
-              return v !== undefined && v !== null && v > 86400 ? null : v;
+            live
+            seconds={set.duration_s}
+            commit={(duration_s) => {
+              if (duration_s !== undefined && duration_s > 86400) return false;
+              onChange({ duration_s });
+              return true;
             }}
-            onValue={(duration_s) => onChange({ duration_s })}
             placeholder={hint.duration_s === undefined ? "m:ss" : durationInput(hint.duration_s)}
             accessibilityLabel={a11y("Time")}
-            keyboardType="numbers-and-punctuation"
             style={[styles.field, { backgroundColor: theme.control }]}
           />
         );

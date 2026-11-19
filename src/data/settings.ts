@@ -171,6 +171,17 @@ export function settingsRepo({ db, clock }: { db: Db; clock: Clock }) {
       await writeLocal(db, REST_SOUND_KEY, sound);
     },
 
+    /** How a new rest opens during a workout: the full card or the small countdown icon. Device-only. */
+    async restTimerView(): Promise<RestTimerView> {
+      const value = await readLocal(db, REST_TIMER_VIEW_KEY);
+      return value === "icon" ? "icon" : "card";
+    },
+
+    async setRestTimerView(view: RestTimerView): Promise<void> {
+      if (view !== "card" && view !== "icon") throw new RangeError(`Unknown view ${String(view)}`);
+      await writeLocal(db, REST_TIMER_VIEW_KEY, view);
+    },
+
     /** Whether the one-time "allow exact rest alerts" prompt has been shown. Device-only. */
     async exactAlarmAsked(): Promise<boolean> {
       return (await readLocal(db, EXACT_ALARM_ASKED_KEY)) === true;
@@ -218,6 +229,9 @@ const REMINDER_KEY = "local_workout_reminder";
 const EXACT_ALARM_ASKED_KEY = "local_exact_alarm_asked";
 const RING_ON_SILENT_KEY = "local_rest_ring_on_silent";
 const REST_SOUND_KEY = "local_rest_sound";
+const REST_TIMER_VIEW_KEY = "local_rest_timer_view";
+
+export type RestTimerView = "card" | "icon";
 
 export const REST_SOUNDS = ["beeps", "bell", "chime", "buzzer"] as const;
 export type RestSound = (typeof REST_SOUNDS)[number];

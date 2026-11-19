@@ -8,7 +8,7 @@ import { DEFAULT_REST_SOUND, type RestSound } from "@/data/settings";
  * ducks music for a moment instead of stopping it. Sounds are made by scripts/make-sounds.mjs.
  */
 const SOURCES: Record<RestSound, number> = {
-  beeps: require("../../../assets/sounds/rest-over.wav") as number,
+  beeps: require("../../../assets/sounds/rest_over.wav") as number,
   bell: require("../../../assets/sounds/bell.wav") as number,
   chime: require("../../../assets/sounds/chime.wav") as number,
   buzzer: require("../../../assets/sounds/buzzer.wav") as number,

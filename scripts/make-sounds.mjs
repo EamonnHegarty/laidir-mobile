@@ -2,8 +2,8 @@
 // synthesised here from sine waves, so there's no licence to track. Run with `pnpm sounds` and
 // commit the output.
 //
-//   rest-over.wav  Beeps: three short rising beeps
-//   bell.wav       Boxing bell: three strikes of a bright metal bell, ringing out
+//   rest_over.wav  Beeps: three short rising beeps
+//   bell.wav       Boxing bell: four quick strikes of a bright metal bell, ringing out
 //   chime.wav      Chime: two soft descending tones
 //   buzzer.wav     Buzzer: a gym-clock buzz
 import { Buffer } from "node:buffer";
@@ -83,6 +83,9 @@ function mix(parts) {
     const offset = n(at);
     for (let s = 0; s < data.length; s++) out[offset + s] += data[s];
   }
+  // Overlapping strikes add up: scale down if the peak would clip.
+  const peak = out.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+  if (peak > 0.95) for (let s = 0; s < len; s++) out[s] *= 0.95 / peak;
   return out;
 }
 
@@ -97,17 +100,19 @@ const concat = (...chunks) => {
 };
 
 const SOUNDS = {
-  "rest-over": concat(
+  rest_over: concat(
     tone(880, 0.14),
     silence(0.09),
     tone(880, 0.14),
     silence(0.09),
     tone(1320, 0.26),
   ),
+  // Fast "ding-ding-ding-ding" like the end-of-round bell: quick strikes, the last one rings out.
   bell: mix([
-    { at: 0, data: strike(660, 1.6) },
-    { at: 0.32, data: strike(660, 1.6) },
-    { at: 0.64, data: strike(660, 2.2) },
+    { at: 0, data: strike(660, 1.2) },
+    { at: 0.15, data: strike(660, 1.2) },
+    { at: 0.3, data: strike(660, 1.2) },
+    { at: 0.45, data: strike(660, 1.9) },
   ]),
   chime: mix([
     { at: 0, data: strike(1046.5, 1.2, 0.45) },

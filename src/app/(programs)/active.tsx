@@ -248,7 +248,7 @@ function ActiveSession({ initial }: { initial: Loaded }) {
         workoutNotes={notes}
         onWorkoutNotes={setNotes}
       />
-      <RestOverlay />
+      <RestTimerOverlay />
     </Screen>
   );
 }
@@ -256,3 +256,9 @@ function ActiveSession({ initial }: { initial: Loaded }) {
 const styles = StyleSheet.create({
   pad: { padding: Spacing.three },
 });
+
+/** The floating rest timer, opening as a card or an icon per Settings. */
+function RestTimerOverlay() {
+  const view = useLiveQuery((r) => r.settings.restTimerView(), []);
+  return <RestOverlay opensAs={view.status === "ready" ? view.data : "card"} />;
+}

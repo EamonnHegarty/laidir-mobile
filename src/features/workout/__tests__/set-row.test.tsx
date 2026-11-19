@@ -35,6 +35,30 @@ describe("LogSetRow", () => {
     expect(onChange.mock.calls.at(-1)![0]).toEqual({ weight_kg: undefined });
   });
 
+  it("types a time like a phone timer: 1000 is 10:00, reported as you type", async () => {
+    const onChange = jest.fn();
+    await render(
+      <LogSetRow
+        number={1}
+        set={{ set_type: "normal", completed: false }}
+        tracking="duration"
+        hint={{}}
+        units={units}
+        exerciseName="Plank"
+        onChange={onChange}
+        onToggle={() => {}}
+        onRemove={() => {}}
+      />,
+    );
+    const time = screen.getByLabelText("Time, set 1, Plank");
+    await fireEvent(time, "focus");
+    await fireEvent.changeText(time, "1000");
+    expect(time.props.value).toBe("10:00");
+    expect(onChange.mock.calls.at(-1)![0]).toEqual({ duration_s: 600 });
+    await fireEvent.changeText(time, "130");
+    expect(onChange.mock.calls.at(-1)![0]).toEqual({ duration_s: 90 });
+  });
+
   it("ticks, and shows a plain number that tapping doesn't change", async () => {
     const onChange = jest.fn();
     const onToggle = jest.fn();

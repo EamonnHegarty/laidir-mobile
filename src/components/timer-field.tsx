@@ -15,10 +15,13 @@ export function TimerField({
   seconds,
   commit,
   placeholder,
+  live = false,
   ...props
 }: Omit<TextInputProps, "value" | "onChangeText" | "onEndEditing" | "keyboardType"> & {
   seconds: number | undefined;
   commit: (seconds: number | undefined) => boolean;
+  /** Commit on every keystroke instead of when editing ends. */
+  live?: boolean;
 }) {
   const [digits, setDigits] = useState("");
   const [editing, setEditing] = useState(false);
@@ -41,11 +44,14 @@ export function TimerField({
       }}
       onChangeText={(text) => {
         setTyped(true);
-        setDigits(timerDigits(text));
+        const next = timerDigits(text);
+        setDigits(next);
+        // Live: report as you type, so ticking the set right away keeps what was typed.
+        if (live) commit(timerSeconds(next));
       }}
       onEndEditing={() => {
         setEditing(false);
-        if (!typed) return;
+        if (!typed || live) return;
         const next = timerSeconds(digits);
         if (next !== seconds) commit(next);
       }}
