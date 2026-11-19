@@ -1,6 +1,7 @@
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 
+import { SwipeDeleteAction } from "@/components/swipe-delete-action";
 import { Icon } from "@/components/icon";
 import { LiveField } from "@/components/live-field";
 import { TimerField } from "@/components/timer-field";
@@ -15,7 +16,6 @@ import { displayNumber, kgToUnit, unitToKg } from "@/lib/units";
 import { fieldsFor } from "./session";
 
 const METRES_PER_MILE = 1609.344;
-const SWIPE_WIDTH = 88;
 
 type Measures = Pick<WorkoutSet, "weight_kg" | "reps" | "duration_s" | "distance_m">;
 type Units = Pick<Settings, "weight_unit" | "distance_unit">;
@@ -154,11 +154,8 @@ export function LogSetRow({
       dragOffsetFromRight={-24}
       dragOffsetFromLeft={10_000}
       onSwipeableOpen={onRemove}
-      renderRightActions={() => (
-        <View style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
-          <Icon name="delete" size={20} color={theme.onTint} />
-          <Text style={[styles.deleteText, { color: theme.onTint }]}>Delete</Text>
-        </View>
+      renderRightActions={(_progress, translation) => (
+        <SwipeDeleteAction translation={translation} />
       )}
     >
       <View
@@ -253,15 +250,6 @@ const styles = StyleSheet.create({
   previous: { flex: 1.3, minWidth: 0 },
   field: { flex: 1, minWidth: 0, paddingVertical: 8, paddingHorizontal: 4, textAlign: "center" },
   tickSpace: { width: 44 },
-  deleteAction: {
-    width: SWIPE_WIDTH,
-    marginLeft: Spacing.one,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 2,
-  },
-  deleteText: { fontSize: 12, fontWeight: 600 },
   tick: {
     width: 44,
     height: 40,

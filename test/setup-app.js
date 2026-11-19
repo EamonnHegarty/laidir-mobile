@@ -15,3 +15,8 @@ jest.mock("react-native-gesture-handler/ReanimatedSwipeable", () => ({
   __esModule: true,
   default: ({ children }) => children,
 }));
+
+// Its Delete panel uses Reanimated too, and only ever renders inside the swipeable mocked above.
+jest.mock("../src/components/swipe-delete-action", () => ({
+  SwipeDeleteAction: () => null,
+}));

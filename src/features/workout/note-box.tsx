@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 
+import { SwipeDeleteAction } from "@/components/swipe-delete-action";
 import { Icon, type IconName } from "@/components/icon";
 import { Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
@@ -36,11 +37,8 @@ export function NoteBox({
       dragOffsetFromRight={-24}
       dragOffsetFromLeft={10_000}
       onSwipeableOpen={onDelete}
-      renderRightActions={() => (
-        <View style={[styles.deleteAction, { backgroundColor: theme.danger }]}>
-          <Icon name="delete" size={20} color={theme.onTint} />
-          <Text style={[styles.deleteText, { color: theme.onTint }]}>Delete</Text>
-        </View>
+      renderRightActions={(_progress, translation) => (
+        <SwipeDeleteAction translation={translation} />
       )}
     >
       <Pressable
@@ -80,14 +78,5 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderLeftWidth: 3,
   },
-  deleteAction: {
-    width: 88,
-    marginLeft: Spacing.one,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 2,
-  },
-  deleteText: { fontSize: 12, fontWeight: 600 },
   flex: { flex: 1 },
 });
