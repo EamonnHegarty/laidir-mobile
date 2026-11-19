@@ -5,6 +5,7 @@ import { ProgressBar } from "@/components/glas";
 import { Icon } from "@/components/icon";
 import { Label } from "@/components/ui";
 import { Spacing } from "@/constants/theme";
+import type { RestTimerView } from "@/data/settings";
 import { useTheme } from "@/hooks/use-theme";
 import { restOver } from "@/lib/haptics";
 import { formatDuration } from "@/lib/units";
@@ -62,23 +63,26 @@ export function RestWatcher() {
 }
 
 /**
- * The rest countdown, floating over the workout as a card: −15, +15, Skip, and a button that
- * shrinks it to a small countdown pill (tap the pill to bring the card back). Each new rest opens
- * as a card again.
+ * The rest countdown, floating over the workout as a card (−15, +15, Skip) or as a small countdown
+ * pill. Settings → "Rest timer opens as" picks which one each new rest starts as; the card's
+ * minimise button and a tap on the pill switch between them for that rest.
  */
-export function RestOverlay() {
+export function RestOverlay({ opensAs = "card" }: { opensAs?: RestTimerView }) {
   const { timer, left } = useRestLeft();
   const theme = useTheme();
-  const [minimisedRun, setMinimisedRun] = useState<number | null>(null);
+  // The rest (by run number) the user switched away from its starting view.
+  const [switchedRun, setSwitchedRun] = useState<number | null>(null);
 
   if (!timer || left === 0) return null;
   const progress = Math.min(1, left / timer.total);
+  const switched = switchedRun === timer.run;
+  const toggle = () => setSwitchedRun(switched ? null : timer.run);
 
-  if (minimisedRun === timer.run) {
+  if ((opensAs === "icon") !== switched) {
     return (
       <View style={styles.pillWrap} pointerEvents="box-none">
         <Pressable
-          onPress={() => setMinimisedRun(null)}
+          onPress={toggle}
           accessibilityRole="button"
           accessibilityLabel={`Rest ${formatDuration(left)} left. Show rest timer`}
           style={({ pressed }) => [
@@ -113,7 +117,7 @@ export function RestOverlay() {
             {formatDuration(left)}
           </Text>
           <Pressable
-            onPress={() => setMinimisedRun(timer.run)}
+            onPress={toggle}
             accessibilityRole="button"
             accessibilityLabel="Minimise rest timer"
             hitSlop={10}

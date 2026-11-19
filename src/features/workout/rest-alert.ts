@@ -2,8 +2,15 @@ import * as Notifications from "expo-notifications";
 import { AndroidAudioContentType, AndroidAudioUsage, AndroidImportance } from "expo-notifications";
 import { Platform } from "react-native";
 
-import { DEFAULT_REST_ALERT, type RestAlert } from "@/data/settings";
+import {
+  DEFAULT_REST_ALERT,
+  DEFAULT_REST_SOUND,
+  REST_SOUNDS,
+  type RestAlert,
+  type RestSound,
+} from "@/data/settings";
 
+import { REST_SOUND_LABELS } from "./rest-sound";
 import { restTimer, type RestTimer } from "./rest-timer";
 
 /**
@@ -15,23 +22,32 @@ import { restTimer, type RestTimer } from "./rest-timer";
  * - "Still working out?": scheduled when the app leaves the screen with a workout running, and
  *   cancelled when it comes back.
  */
-const REST_CHANNELS: Record<Exclude<RestAlert, "silent">, string> = {
-  both: "rest-both",
-  sound: "rest-sound",
-  vibrate: "rest-vibrate",
-};
+const VIBRATE_CHANNEL = "rest-vibrate";
 /**
- * "Ring even on silent": the same choices on channels whose sound uses Android's alarm category
- * (alarm volume), like a kitchen timer. Channel settings can't change after creation, so these are
- * separate channels rather than a flag on the old ones.
+ * Android fixes a channel's sound when it's created, so each rest sound has its own channels:
+ * sound with or without vibration, each in a normal and a "Ring even on silent" form (alarm
+ * volume, like a kitchen timer). The files are bundled by the expo-notifications plugin
+ * (app.config.ts), referred to by file name.
  */
-const LOUD_CHANNELS: Record<"both" | "sound", string> = {
-  both: "rest-alarm-both",
-  sound: "rest-alarm-sound",
+const SOUND_FILES: Record<RestSound, string> = {
+  beeps: "rest_over.wav",
+  bell: "bell.wav",
+  chime: "chime.wav",
+  buzzer: "buzzer.wav",
 };
+type Audible = "both" | "sound";
+export function restChannelId(sound: RestSound, kind: Audible, loud: boolean): string {
+  return `rest-${sound}-${loud ? "alarm-" : ""}${kind}`;
+}
 const REMINDER_CHANNEL = "workout-reminder";
-/** The channel used before sound settings existed; removed so it doesn't linger in system settings. */
-const OLD_CHANNEL = "rest-timer";
+/** Channels from earlier versions (before per-sound channels); removed so they don't linger. */
+const OLD_CHANNELS = [
+  "rest-timer",
+  "rest-both",
+  "rest-sound",
+  "rest-alarm-both",
+  "rest-alarm-sound",
+];
 const VIBRATION = [0, 300, 150, 300];
 
 /** How long the app must be away, with a workout running, before the reminder. */
@@ -41,6 +57,7 @@ type Kind = "rest" | "reminder";
 
 let mode: RestAlert = DEFAULT_REST_ALERT;
 let ringOnSilent = true;
+let sound: RestSound = DEFAULT_REST_SOUND;
 /** Fixed ids, so a notification scheduled before the app was killed can still be cancelled. */
 const REST_ID = "rest-over";
 const REMINDER_ID = "workout-reminder";
@@ -67,25 +84,14 @@ export function prepareRestAlerts(): Promise<boolean> {
         },
       });
       if (Platform.OS === "android") {
-        await Notifications.deleteNotificationChannelAsync(OLD_CHANNEL).catch(() => {});
+        for (const id of OLD_CHANNELS) {
+          await Notifications.deleteNotificationChannelAsync(id).catch(() => {});
+        }
         const rest = {
           description: "Tells you when your rest between sets is over",
           importance: AndroidImportance.HIGH,
         };
-        await Notifications.setNotificationChannelAsync(REST_CHANNELS.both, {
-          ...rest,
-          name: "Rest timer: sound and vibration",
-          sound: "default",
-          enableVibrate: true,
-          vibrationPattern: VIBRATION,
-        });
-        await Notifications.setNotificationChannelAsync(REST_CHANNELS.sound, {
-          ...rest,
-          name: "Rest timer: sound",
-          sound: "default",
-          enableVibrate: false,
-        });
-        await Notifications.setNotificationChannelAsync(REST_CHANNELS.vibrate, {
+        await Notifications.setNotificationChannelAsync(VIBRATE_CHANNEL, {
           ...rest,
           name: "Rest timer: vibration",
           sound: null,
@@ -97,21 +103,22 @@ export function prepareRestAlerts(): Promise<boolean> {
           contentType: AndroidAudioContentType.SONIFICATION,
           flags: { enforceAudibility: true, requestHardwareAudioVideoSynchronization: false },
         };
-        await Notifications.setNotificationChannelAsync(LOUD_CHANNELS.both, {
-          ...rest,
-          name: "Rest timer: ring on silent, with vibration",
-          sound: "default",
-          audioAttributes: alarmAudio,
-          enableVibrate: true,
-          vibrationPattern: VIBRATION,
-        });
-        await Notifications.setNotificationChannelAsync(LOUD_CHANNELS.sound, {
-          ...rest,
-          name: "Rest timer: ring on silent",
-          sound: "default",
-          audioAttributes: alarmAudio,
-          enableVibrate: false,
-        });
+        for (const sound of REST_SOUNDS) {
+          const label = REST_SOUND_LABELS[sound];
+          for (const loud of [false, true]) {
+            for (const kind of ["both", "sound"] as const) {
+              const vibrate = kind === "both";
+              await Notifications.setNotificationChannelAsync(restChannelId(sound, kind, loud), {
+                ...rest,
+                name: `Rest timer: ${label}${loud ? ", ring on silent" : ""}${vibrate ? ", with vibration" : ""}`,
+                sound: SOUND_FILES[sound],
+                ...(loud ? { audioAttributes: alarmAudio } : {}),
+                enableVibrate: vibrate,
+                ...(vibrate ? { vibrationPattern: VIBRATION } : {}),
+              });
+            }
+          }
+        }
         await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL, {
           name: "Unfinished workout",
           description: "Reminds you about a workout left running",
@@ -161,10 +168,17 @@ export function playsOwnSound(): boolean {
   return ringOnSilent && (mode === "both" || mode === "sound");
 }
 
+/** Settings → rest sound, for the notification. Applies from the next rest (and reschedules a running one). */
+export function setRestAlertSound(next: RestSound) {
+  if (next === sound) return;
+  sound = next;
+  queue(() => syncRest(restTimer.get()));
+}
+
 function restChannel(): string | undefined {
   if (mode === "silent") return undefined;
-  if (ringOnSilent && (mode === "both" || mode === "sound")) return LOUD_CHANNELS[mode];
-  return REST_CHANNELS[mode];
+  if (mode === "vibrate") return VIBRATE_CHANNEL;
+  return restChannelId(sound, mode, ringOnSilent);
 }
 
 export function kindOf(data: unknown): Kind | undefined {

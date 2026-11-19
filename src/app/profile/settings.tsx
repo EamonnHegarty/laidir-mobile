@@ -40,17 +40,27 @@ export default function SettingsScreen() {
   const repos = useRepositories();
   const [exporting, setExporting] = useState(false);
   const query = useLiveQuery(async (r) => {
-    const [settings, displayName, accent, appearance, restAlert, reminder, ringOnSilent, sound] =
-      await Promise.all([
-        r.settings.get(),
-        r.settings.displayName(),
-        r.settings.accent(),
-        r.settings.appearance(),
-        r.settings.restAlert(),
-        r.settings.workoutReminder(),
-        r.settings.restRingOnSilent(),
-        r.settings.restSound(),
-      ]);
+    const [
+      settings,
+      displayName,
+      accent,
+      appearance,
+      restAlert,
+      reminder,
+      ringOnSilent,
+      sound,
+      timerView,
+    ] = await Promise.all([
+      r.settings.get(),
+      r.settings.displayName(),
+      r.settings.accent(),
+      r.settings.appearance(),
+      r.settings.restAlert(),
+      r.settings.workoutReminder(),
+      r.settings.restRingOnSilent(),
+      r.settings.restSound(),
+      r.settings.restTimerView(),
+    ]);
     return {
       settings,
       displayName,
@@ -60,6 +70,7 @@ export default function SettingsScreen() {
       reminder,
       ringOnSilent,
       sound,
+      timerView,
     };
   }, []);
   const update = (changes: Partial<Settings>) => void repos.settings.update(changes);
@@ -87,8 +98,17 @@ export default function SettingsScreen() {
   };
 
   if (!query.data) return <Screen />;
-  const { settings, displayName, accent, appearance, restAlert, reminder, ringOnSilent, sound } =
-    query.data;
+  const {
+    settings,
+    displayName,
+    accent,
+    appearance,
+    restAlert,
+    reminder,
+    ringOnSilent,
+    sound,
+    timerView,
+  } = query.data;
   const audible = restAlert === "both" || restAlert === "sound";
 
   return (
@@ -181,6 +201,21 @@ export default function SettingsScreen() {
           The default between sets, when a workout or exercise doesn&apos;t set its own. Weights are
           always stored in kg, so switching units never changes your history.
         </Label>
+        <Label tone="secondary" size="small" style={styles.note}>
+          Rest timer opens as
+        </Label>
+        <Choice>
+          <Chip
+            label="Card"
+            selected={timerView === "card"}
+            onPress={() => void repos.settings.setRestTimerView("card")}
+          />
+          <Chip
+            label="Small icon"
+            selected={timerView === "icon"}
+            onPress={() => void repos.settings.setRestTimerView("icon")}
+          />
+        </Choice>
 
         <SectionHeader>When rest is over</SectionHeader>
         <Choice>
@@ -231,10 +266,8 @@ export default function SettingsScreen() {
           <ExactAlarmRow />
         </RowGroup>
         <Label tone="secondary" size="small" style={styles.note}>
-          Rings with the screen locked or the app in the background too. The sound you pick plays
-          while Láidir is open with &quot;Ring even on silent&quot; on; otherwise your phone&apos;s
-          notification sound is used. Each exercise&apos;s rest is set from the timer chip on its
-          card during a workout.
+          Rings with your chosen sound with the screen locked or the app in the background too. Each
+          exercise&apos;s rest is set from the timer chip on its card during a workout.
         </Label>
 
         <SectionHeader>Unfinished workout</SectionHeader>

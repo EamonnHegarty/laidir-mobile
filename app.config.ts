@@ -67,8 +67,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         icon: "./assets/images/notification-icon.png",
         color: "#3DDC84",
-        // Local notifications only (rest timer); no push until sync exists.
+        // Local notifications only (rest timer). No push yet.
         enableRemoteNotifications: false,
+        // Rest-over sounds for the notification channels (Android needs res/raw-safe names).
+        sounds: [
+          "./assets/sounds/rest_over.wav",
+          "./assets/sounds/bell.wav",
+          "./assets/sounds/chime.wav",
+          "./assets/sounds/buzzer.wav",
+        ],
       },
     ],
     // Phase 3 sign-in: Cognito managed login in the system browser (expo-auth-session), tokens in

@@ -25,6 +25,7 @@ function fakeRepositories() {
   let accent = "glas";
   let restAlert = "both";
   let restSound = "beeps";
+  let timerView = "card";
   const settings = {
     displayName: async () => name,
     setDisplayName: async (next: string | null) => {
@@ -42,6 +43,11 @@ function fakeRepositories() {
     restSound: async () => restSound,
     setRestSound: async (next: string) => {
       restSound = next;
+      changes.notify();
+    },
+    restTimerView: async () => timerView,
+    setRestTimerView: async (next: string) => {
+      timerView = next;
       changes.notify();
     },
     accent: async () => accent,
@@ -63,6 +69,7 @@ function fakeRepositories() {
     accent: () => accent,
     restAlert: () => restAlert,
     restSound: () => restSound,
+    timerView: () => timerView,
   };
 }
 
@@ -105,6 +112,15 @@ describe("Settings screen", () => {
     expect(await screen.findByRole("button", { name: "Boxing bell" })).toBeSelected();
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(mockPlay).toHaveBeenCalled();
+  });
+
+  it("picks whether the rest timer opens as a card or a small icon", async () => {
+    const fake = fakeRepositories();
+    await renderSettings(fake);
+    expect(await screen.findByRole("button", { name: "Card" })).toBeSelected();
+    await fireEvent.press(screen.getByRole("button", { name: "Small icon" }));
+    expect(fake.timerView()).toBe("icon");
+    expect(await screen.findByRole("button", { name: "Small icon" })).toBeSelected();
   });
 
   it("switches units, default rest and display name, and saves them", async () => {

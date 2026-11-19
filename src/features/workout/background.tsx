@@ -12,6 +12,7 @@ import {
   kindOf,
   scheduleWorkoutReminder,
   setRestAlertMode,
+  setRestAlertSound,
   setRestRingOnSilent,
 } from "./rest-alert";
 import { setRestSound } from "./rest-sound";
@@ -50,6 +51,7 @@ export function WorkoutBackground() {
       setRestAlertMode(query.data.restAlert);
       setRestRingOnSilent(query.data.ringOnSilent);
       setRestSound(query.data.restSound);
+      setRestAlertSound(query.data.restSound);
     }
     if (query.data && (!query.data.active || !query.data.reminder)) cancelWorkoutReminder();
   }, [query.data]);

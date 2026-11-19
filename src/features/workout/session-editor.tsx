@@ -18,6 +18,7 @@ import { tapConfirm } from "@/lib/haptics";
 import { useTheme } from "@/hooks/use-theme";
 
 import { ExerciseMenu } from "./exercise-menu";
+import { NoteBox } from "./note-box";
 import { NoteEditor } from "./note-editor";
 import { RestPicker, restLabel } from "./rest-picker";
 import { restTimer } from "./rest-timer";
@@ -154,21 +155,30 @@ function SessionBody({
           </Label>
         </View>
       ) : null}
-      {onWorkoutNotes ? (
+      {onWorkoutNotes && workoutNotes ? (
+        <NoteBox
+          text={workoutNotes}
+          icon="edit_note"
+          label="Workout note"
+          onEdit={() => {
+            Keyboard.dismiss();
+            setEditingWorkoutNote(true);
+          }}
+          onDelete={() => onWorkoutNotes("")}
+        />
+      ) : onWorkoutNotes ? (
         <Pressable
           onPress={() => {
             Keyboard.dismiss();
             setEditingWorkoutNote(true);
           }}
           accessibilityRole="button"
-          accessibilityLabel={
-            workoutNotes ? `Workout note: ${workoutNotes}. Edit note` : "Add a workout note"
-          }
+          accessibilityLabel="Add a workout note"
           style={({ pressed }) => [styles.note, pressed && { opacity: 0.6 }]}
         >
           <Icon name="edit_note" size={18} color={theme.tint} />
-          <Label tone={workoutNotes ? "secondary" : "tint"} size="small" style={styles.flex}>
-            {workoutNotes || "Add a workout note"}
+          <Label tone="tint" size="small" style={styles.flex}>
+            Add a workout note
           </Label>
         </Pressable>
       ) : null}
@@ -227,17 +237,15 @@ function SessionBody({
             </View>
 
             {exercise.notes ? (
-              <Pressable
-                onPress={() => setNoteFor(index)}
-                accessibilityRole="button"
-                accessibilityLabel={`Note: ${exercise.notes}. Edit note`}
-                style={({ pressed }) => [styles.note, pressed && { opacity: 0.6 }]}
-              >
-                <Icon name="sticky_note_2" size={16} color={theme.tint} />
-                <Label tone="secondary" size="small" style={styles.flex}>
-                  {exercise.notes}
-                </Label>
-              </Pressable>
+              <NoteBox
+                text={exercise.notes}
+                label={`Note for ${info.name}`}
+                onEdit={() => {
+                  Keyboard.dismiss();
+                  setNoteFor(index);
+                }}
+                onDelete={() => onExercises((cur) => setNote(cur, index, ""))}
+              />
             ) : null}
 
             <LogSetHeader tracking={info.tracking} units={settings} />
